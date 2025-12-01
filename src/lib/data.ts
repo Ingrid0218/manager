@@ -61,10 +61,12 @@ export const locations: Location[] = [
   { id: 'loc3', name: '中山據點', address: '台北市中山區中山北路二段48巷7號' },
 ];
 
-const today = new Date();
+const baseDate = new Date();
+baseDate.setDate(15); // Set a fixed day to avoid issues at the beginning/end of the month
+
 const getCourseDate = (dayOffset: number, hour: number) => {
-  const date = new Date(today);
-  date.setDate(today.getDate() + dayOffset);
+  const date = new Date(baseDate);
+  date.setDate(baseDate.getDate() + dayOffset);
   date.setHours(hour, 0, 0, 0);
   return date;
 };
