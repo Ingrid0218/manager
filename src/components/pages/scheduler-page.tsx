@@ -28,6 +28,11 @@ export function SchedulerPage() {
   const [instructorFilter, setInstructorFilter] = React.useState<string>("all");
   const [locationFilter, setLocationFilter] = React.useState<string>("all");
 
+  const [isClient, setIsClient] = React.useState(false);
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const filteredCourses = React.useMemo(() => {
     return courses
       .filter((course) => date && isSameDay(course.startTime, date))
@@ -56,23 +61,25 @@ export function SchedulerPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              className="rounded-md"
-              locale={zhTW}
-              modifiers={{
-                events: courses.map((course) => course.startTime),
-              }}
-              modifiersStyles={{
-                events: {
-                  color: "hsl(var(--primary-foreground))",
-                  backgroundColor: "hsl(var(--primary))",
-                },
-              }}
-              defaultMonth={new Date()}
-            />
+            {isClient && (
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={setDate}
+                className="rounded-md"
+                locale={zhTW}
+                modifiers={{
+                  events: courses.map((course) => course.startTime),
+                }}
+                modifiersStyles={{
+                  events: {
+                    color: "hsl(var(--primary-foreground))",
+                    backgroundColor: "hsl(var(--primary))",
+                  },
+                }}
+                defaultMonth={new Date(2024, 6, 1)}
+              />
+            )}
           </CardContent>
         </Card>
         <Card>
