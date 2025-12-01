@@ -56,13 +56,13 @@ export const applications: (Application & { instructor: Instructor })[] = [
 ];
 
 export const locations: Location[] = [
-  { id: 'loc1', name: '信義據點', address: '台北市信義區市府路1號' },
-  { id: 'loc2', name: '大安據點', address: '台北市大安區新生南路二段1號' },
-  { id: 'loc3', name: '中山據點', address: '台北市中山區中山北路二段48巷7號' },
+  { id: 'loc1', name: '桃米里', address: '台北市信義區市府路1號' },
+  { id: 'loc2', name: '向善里', address: '台北市大安區新生南路二段1號' },
+  { id: 'loc3', name: '福興里', address: '台北市中山區中山北路二段48巷7號' },
 ];
 
 const getCourseDate = (day: number, hour: number) => {
-  const date = new Date();
+  const date = new Date(2024, 6, 1); // Use a fixed month to avoid inconsistencies, July is 6
   date.setDate(day);
   date.setHours(hour, 0, 0, 0);
   return date;
