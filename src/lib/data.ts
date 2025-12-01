@@ -61,25 +61,22 @@ export const locations: Location[] = [
   { id: 'loc3', name: '中山據點', address: '台北市中山區中山北路二段48巷7號' },
 ];
 
-const baseDate = new Date();
-baseDate.setDate(15); // Set a fixed day to avoid issues at the beginning/end of the month
-
-const getCourseDate = (dayOffset: number, hour: number) => {
-  const date = new Date(baseDate);
-  date.setDate(baseDate.getDate() + dayOffset);
+const getCourseDate = (day: number, hour: number) => {
+  const date = new Date();
+  date.setDate(day);
   date.setHours(hour, 0, 0, 0);
   return date;
 };
 
 export const courses: Course[] = [
-  { id: 'c1', title: '懷舊金曲歡唱', instructorId: '1', locationId: 'loc1', startTime: getCourseDate(1, 10), endTime: getCourseDate(1, 11) },
-  { id: 'c2', title: '活力健康操', instructorId: '2', locationId: 'loc2', startTime: getCourseDate(1, 14), endTime: getCourseDate(1, 15) },
-  { id: 'c3', title: '迷你盆栽DIY', instructorId: '3', locationId: 'loc3', startTime: getCourseDate(2, 10), endTime: getCourseDate(2, 11) },
-  { id: 'c4', title: '益智桌遊派對', instructorId: '4', locationId: 'loc1', startTime: getCourseDate(2, 15), endTime: getCourseDate(2, 16) },
-  { id: 'c5', title: '創意輕食烘焙', instructorId: '5', locationId: 'loc2', startTime: getCourseDate(3, 9), endTime: getCourseDate(3, 10) },
-  { id: 'c6', title: '節奏打擊樂', instructorId: '1', locationId: 'loc3', startTime: getCourseDate(3, 14), endTime: getCourseDate(3, 15) },
-  { id: 'c7', 'title': '下肢肌力訓練', 'instructorId': '2', 'locationId': 'loc1', 'startTime': getCourseDate(4, 10), 'endTime': getCourseDate(4, 11) },
-  { id: 'c8', 'title': '手作編織小物', 'instructorId': '3', 'locationId': 'loc2', 'startTime': getCourseDate(4, 14), 'endTime': getCourseDate(4, 15) },
+  { id: 'c1', title: '懷舊金曲歡唱', instructorId: '1', locationId: 'loc1', startTime: getCourseDate(8, 10), endTime: getCourseDate(8, 11) },
+  { id: 'c2', title: '活力健康操', instructorId: '2', locationId: 'loc2', startTime: getCourseDate(8, 14), endTime: getCourseDate(8, 15) },
+  { id: 'c3', title: '迷你盆栽DIY', instructorId: '3', locationId: 'loc3', startTime: getCourseDate(12, 10), endTime: getCourseDate(12, 11) },
+  { id: 'c4', title: '益智桌遊派對', instructorId: '4', locationId: 'loc1', startTime: getCourseDate(12, 15), endTime: getCourseDate(12, 16) },
+  { id: 'c5', title: '創意輕食烘焙', instructorId: '5', locationId: 'loc2', startTime: getCourseDate(18, 9), endTime: getCourseDate(18, 10) },
+  { id: 'c6', title: '節奏打擊樂', instructorId: '1', locationId: 'loc3', startTime: getCourseDate(18, 14), endTime: getCourseDate(18, 15) },
+  { id: 'c7', 'title': '下肢肌力訓練', 'instructorId': '2', 'locationId': 'loc1', 'startTime': getCourseDate(22, 10), 'endTime': getCourseDate(22, 11) },
+  { id: 'c8', 'title': '手作編織小物', 'instructorId': '3', 'locationId': 'loc2', 'startTime': getCourseDate(25, 14), 'endTime': getCourseDate(25, 15) },
 ];
 
 export const courseFeedback: (CourseFeedback & { courseTitle: string, instructorName: string })[] = [

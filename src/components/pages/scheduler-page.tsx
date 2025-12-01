@@ -24,7 +24,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 export function SchedulerPage() {
-  const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const [date, setDate] = React.useState<Date | undefined>(undefined);
   const [instructorFilter, setInstructorFilter] = React.useState<string>("all");
   const [locationFilter, setLocationFilter] = React.useState<string>("all");
 
@@ -71,6 +71,7 @@ export function SchedulerPage() {
                   backgroundColor: "hsl(var(--primary))",
                 },
               }}
+              defaultMonth={new Date()}
             />
           </CardContent>
         </Card>
