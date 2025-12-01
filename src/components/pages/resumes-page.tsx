@@ -109,7 +109,12 @@ export function ResumesPage() {
                       {app.date}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getStatusVariant(app.status)}>
+                      <Badge
+                        variant={getStatusVariant(app.status)}
+                        className={
+                          app.status === "Accepted" ? "badge-accepted" : ""
+                        }
+                      >
                         {getStatusText(app.status)}
                       </Badge>
                     </TableCell>

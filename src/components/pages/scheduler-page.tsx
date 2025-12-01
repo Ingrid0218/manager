@@ -19,6 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { courses, instructors, locations } from "@/lib/data";
 import { format, isSameDay } from "date-fns";
+import { zhTW } from "date-fns/locale";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
@@ -60,6 +61,7 @@ export function SchedulerPage() {
               selected={date}
               onSelect={setDate}
               className="rounded-md"
+              locale={zhTW}
               modifiers={{
                 events: courses.map((course) => course.startTime),
               }}
@@ -75,7 +77,7 @@ export function SchedulerPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              {date ? format(date, "yyyy年MM月dd日") : "選擇日期"}
+              {date ? format(date, "yyyy年MM月dd日", { locale: zhTW }) : "選擇日期"}
             </CardTitle>
             <CardDescription>當日課程列表</CardDescription>
           </CardHeader>
