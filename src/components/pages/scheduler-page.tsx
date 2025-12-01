@@ -69,6 +69,17 @@ export function SchedulerPage() {
                 onSelect={setDate}
                 className="rounded-md"
                 locale={zhTW}
+                month={date}
+                onMonthChange={(newMonth) => {
+                  const today = new Date();
+                  if (newMonth.getMonth() !== today.getMonth() || newMonth.getFullYear() !== today.getFullYear()) {
+                     const newDate = new Date(newMonth);
+                     newDate.setDate(1);
+                     setDate(newDate);
+                  } else {
+                    setDate(today);
+                  }
+                }}
                 modifiers={{
                   events: courses.map((course) => course.startTime),
                 }}
@@ -78,7 +89,6 @@ export function SchedulerPage() {
                     backgroundColor: "hsl(var(--primary))",
                   },
                 }}
-                defaultMonth={new Date(2024, 6, 1)}
               />
             )}
           </CardContent>

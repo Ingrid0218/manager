@@ -61,8 +61,9 @@ export const locations: Location[] = [
   { id: 'loc3', name: '福興里', address: '台北市中山區中山北路二段48巷7號' },
 ];
 
-const getCourseDate = (day: number, hour: number) => {
-  const date = new Date(2024, 6, 1); // Use a fixed month to avoid inconsistencies, July is 6
+const getCourseDate = (day: number, hour: number, monthOffset = 0) => {
+  const date = new Date();
+  date.setMonth(date.getMonth() + monthOffset);
   date.setDate(day);
   date.setHours(hour, 0, 0, 0);
   return date;
