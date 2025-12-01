@@ -31,6 +31,7 @@ export function SchedulerPage() {
   const [isClient, setIsClient] = React.useState(false);
   React.useEffect(() => {
     setIsClient(true);
+    setDate(new Date());
   }, []);
 
   const filteredCourses = React.useMemo(() => {
