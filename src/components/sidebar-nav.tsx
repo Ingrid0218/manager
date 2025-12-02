@@ -34,7 +34,8 @@ export function SidebarNav() {
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center justify-center p-2">
-          <Image src="https://www.pch.org.tw/web/images/logo.png" alt="Puli Christian Hospital Logo" width={200} height={50} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="https://www.pch.org.tw/web/images/logo.png" alt="Puli Christian Hospital Logo" width={200} height={50} />
         </div>
       </SidebarHeader>
       <SidebarContent className="p-2">
