@@ -64,7 +64,7 @@ export function SidebarNav() {
           <div className="overflow-hidden">
             <p className="font-semibold truncate">管理者</p>
             <p className="text-xs text-muted-foreground truncate">
-              admin@christianhospital.puli.com
+              admin@christian.puli.com
             </p>
           </div>
         </div>
