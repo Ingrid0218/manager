@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Star,
   DollarSign,
+  HeartPulse,
 } from "lucide-react";
 import Image from "next/image";
 import {
@@ -33,8 +34,11 @@ export function SidebarNav() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="flex items-center justify-center p-2">
-          <Image src="https://www.pch.org.tw/web/images/logo.png" alt="Puli Christian Hospital Logo" width={200} height={50} />
+        <div className="flex items-center gap-2 p-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <HeartPulse className="h-6 w-6" />
+            </div>
+            <span className="font-semibold">Puli Christian Hospital</span>
         </div>
       </SidebarHeader>
       <SidebarContent className="p-2">
