@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
-import { instructors, courses } from "@/lib/data";
+import { applications, courses } from "@/lib/data";
 
 type BillingSummary = {
   instructorId: string;
@@ -28,7 +28,11 @@ type BillingSummary = {
 };
 
 export function BillingPage() {
-  const billingData: BillingSummary[] = instructors.map((instructor) => {
+  const acceptedInstructors = applications
+    .filter((app) => app.status === "Accepted")
+    .map((app) => app.instructor);
+
+  const billingData: BillingSummary[] = acceptedInstructors.map((instructor) => {
     const instructorCourses = courses.filter(
       (c) => c.instructorId === instructor.id
     );
@@ -95,7 +99,7 @@ export function BillingPage() {
                   <TableCell className="text-right hidden sm:table-cell">
                     {data.hourlyRate.toLocaleString()} 元/小時
                   </TableCell>
-                  <TableCell className="text-right hidden sm:table-cell">
+                  <TableCell className="text-right hidden sm-table-cell">
                     {data.totalHours} 小時
                   </TableCell>
                   <TableCell className="text-right font-semibold">
