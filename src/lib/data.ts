@@ -45,14 +45,20 @@ export const instructors: Instructor[] = [
   { id: '3', name: '林老師 (Lin Laoshi)', avatarUrl: 'https://picsum.photos/seed/lin/100/100', email: 'lin.l@example.com', phone: '0934-567-890', specialties: ['園藝治療', '手工藝'], bio: '透過植物與手作，引導長者感受生命力，促進手眼協調與身心放鬆。', hourlyRate: 700 },
   { id: '4', name: '李老師 (Li Laoshi)', avatarUrl: 'https://picsum.photos/seed/li/100/100', email: 'li.l@example.com', phone: '0945-678-901', specialties: ['桌遊', '認知訓練'], bio: '利用有趣的桌遊活動，活化長者腦力，預防失智，營造歡樂的學習氛圍。', hourlyRate: 720 },
   { id: '5', name: '張老師 (Zhang Laoshi)', avatarUrl: 'https://picsum.photos/seed/zhang/100/100', email: 'zhang.l@example.com', phone: '0956-789-012', specialties: ['烹飪', '營養學'], bio: '帶領長者製作簡單又營養的點心，分享健康飲食知識，享受動手做的樂趣。', hourlyRate: 780 },
+  { id: '6', name: '黃老師 (Huang Laoshi)', avatarUrl: 'https://picsum.photos/seed/huang/100/100', email: 'huang.l@example.com', phone: '0967-890-123', specialties: ['心理諮商', '正念引導'], bio: '具備專業心理諮商背景，擅長傾聽並引導長者進行正念練習，協助處理情緒困擾。', hourlyRate: 900 },
+  { id: '7', name: '許老師 (Xu Laoshi)', avatarUrl: 'https://picsum.photos/seed/xu/100/100', email: 'xu.l@example.com', phone: '0978-901-234', specialties: ['書法', '國畫'], bio: '書法及國畫藝術家，教學經驗豐富，能帶領長者在筆墨之間陶冶性情、靜心養性。', hourlyRate: 850 },
+  { id: '8', name: '周老師 (Zhou Laoshi)', avatarUrl: 'https://picsum.photos/seed/zhou/100/100', email: 'zhou.l@example.com', phone: '0989-012-345', specialties: ['手機攝影', '影片剪輯'], bio: '專長為數位影像教學，耐心指導長者學習使用智慧型手機，記錄生活點滴。', hourlyRate: 730 },
 ];
 
 export const applications: (Application & { instructor: Instructor })[] = [
   { id: 'app1', instructorId: '1', date: '2024-05-20', status: 'Accepted', instructor: instructors[0] },
-  { id: 'app2', instructorId: '2', date: '2024-05-22', status: 'Reviewed', instructor: instructors[1] },
-  { id: 'app3', instructorId: '3', date: '2024-05-25', status: 'Pending', instructor: instructors[2] },
+  { id: 'app2', instructorId: '2', date: '2024-05-22', status: 'Accepted', instructor: instructors[1] },
+  { id: 'app3', instructorId: '3', date: '2024-05-25', status: 'Accepted', instructor: instructors[2] },
   { id: 'app4', instructorId: '4', date: '2024-05-28', status: 'Accepted', instructor: instructors[3] },
-  { id: 'app5', instructorId: '5', date: '2024-06-01', status: 'Rejected', instructor: instructors[4] },
+  { id: 'app5', instructorId: '5', date: '2024-06-01', status: 'Accepted', instructor: instructors[4] },
+  { id: 'app6', instructorId: '6', date: '2024-06-02', status: 'Reviewed', instructor: instructors[5] },
+  { id: 'app7', instructorId: '7', date: '2024-06-03', status: 'Pending', instructor: instructors[6] },
+  { id: 'app8', instructorId: '8', date: '2024-06-04', status: 'Rejected', instructor: instructors[7] },
 ];
 
 export const locations: Location[] = [
