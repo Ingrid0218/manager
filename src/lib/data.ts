@@ -49,7 +49,7 @@ const getCourseDate = (day: number, hour: number, monthOffset = 0) => {
   return date;
 };
 
-const instructors: Instructor[] = [
+export const instructors: Instructor[] = [
   { id: '1', name: '王老師 (Wang Laoshi)', avatarUrl: 'https://picsum.photos/seed/wang/100/100', email: 'wang.l@example.com', phone: '0912-345-678', specialties: ['音樂療法', '藝術創作'], bio: '擁有超過10年的音樂治療經驗，擅長利用音樂改善長者的情緒與認知功能。', hourlyRate: 800 },
   { id: '2', name: '陳老師 (Chen Laoshi)', avatarUrl: 'https://picsum.photos/seed/chen/100/100', email: 'chen.l@example.com', phone: '0923-456-789', specialties: ['體適能', '健康操'], bio: '專業體適能教練，為長者設計安全有效的運動課程，充滿活力與熱情。', hourlyRate: 750 },
   { id: '3', name: '林老師 (Lin Laoshi)', avatarUrl: 'https://picsum.photos/seed/lin/100/100', email: 'lin.l@example.com', phone: '0934-567-890', specialties: ['園藝治療', '手工藝'], bio: '透過植物與手作，引導長者感受生命力，促進手眼協調與身心放鬆。', hourlyRate: 700 },
@@ -60,7 +60,7 @@ const instructors: Instructor[] = [
   { id: '8', name: '周老師 (Zhou Laoshi)', avatarUrl: 'https://picsum.photos/seed/zhou/100/100', email: 'zhou.l@example.com', phone: '0989-012-345', specialties: ['手機攝影', '影片剪輯'], bio: '專長為數位影像教學，耐心指導長者學習使用智慧型手機，記錄生活點滴。', hourlyRate: 730 },
 ];
 
-const courses: Course[] = [
+export const courses: Course[] = [
   { id: 'c1', title: '懷舊金曲歡唱', instructorId: '1', locationId: 'loc1', startTime: getCourseDate(8, 10), endTime: getCourseDate(8, 11) },
   { id: 'c2', title: '活力健康操', instructorId: '2', locationId: 'loc2', startTime: getCourseDate(8, 14), endTime: getCourseDate(8, 15) },
   { id: 'c3', title: '迷你盆栽DIY', instructorId: '3', locationId: 'loc3', startTime: getCourseDate(12, 10), endTime: getCourseDate(12, 11) },
