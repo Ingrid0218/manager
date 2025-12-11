@@ -18,14 +18,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { applications, type Instructor } from "@/lib/data";
 
 type BillingSummary = {
@@ -36,8 +28,6 @@ type BillingSummary = {
 };
 
 export function BillingPage() {
-  const [selectedInstructor, setSelectedInstructor] = React.useState<Instructor | null>(null);
-
   const acceptedApplications = applications.filter(
     (app) => app.status === "Accepted"
   );
@@ -98,13 +88,7 @@ export function BillingPage() {
                 {billingData.map((data) => (
                   <TableRow key={data.instructor.id}>
                     <TableCell className="font-medium">
-                      <Button
-                        variant="link"
-                        className="p-0 h-auto"
-                        onClick={() => setSelectedInstructor(data.instructor)}
-                      >
-                        {data.instructor.name}
-                      </Button>
+                      {data.instructor.name}
                     </TableCell>
                     <TableCell className="text-right">
                       {data.courseCount}
@@ -133,60 +117,6 @@ export function BillingPage() {
           </CardContent>
         </Card>
       </div>
-      <Dialog open={!!selectedInstructor} onOpenChange={() => setSelectedInstructor(null)}>
-        <DialogContent className="sm:max-w-md">
-          {selectedInstructor && (
-            <>
-              <DialogHeader>
-                <DialogTitle>{selectedInstructor.name} - 詳細資料</DialogTitle>
-                <DialogDescription>
-                  講師的個人背景與相關資訊。
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4 text-sm">
-                <div className="grid grid-cols-3 items-center gap-x-4 gap-y-2">
-                  <span className="text-muted-foreground">性別</span>
-                  <span className="col-span-2">{selectedInstructor.gender}</span>
-                </div>
-                 <div className="grid grid-cols-3 items-center gap-x-4 gap-y-2">
-                  <span className="text-muted-foreground">年齡</span>
-                  <span className="col-span-2">{selectedInstructor.age}</span>
-                </div>
-                <div className="grid grid-cols-3 items-center gap-x-4 gap-y-2">
-                  <span className="text-muted-foreground">Email</span>
-                  <span className="col-span-2">{selectedInstructor.email}</span>
-                </div>
-                <div className="grid grid-cols-3 items-center gap-x-4 gap-y-2">
-                  <span className="text-muted-foreground">Phone</span>
-                  <span className="col-span-2">{selectedInstructor.phone}</span>
-                </div>
-                <div className="grid grid-cols-3 items-center gap-x-4 gap-y-2">
-                  <span className="text-muted-foreground">金融帳號</span>
-                  <span className="col-span-2">{selectedInstructor.bankAccount}</span>
-                </div>
-                 <div className="grid grid-cols-3 items-start gap-x-4 gap-y-2">
-                  <span className="text-muted-foreground">專長</span>
-                  <span className="col-span-2">{selectedInstructor.specialties.join(', ')}</span>
-                </div>
-                <div className="grid grid-cols-3 items-start gap-x-4 gap-y-2">
-                  <span className="text-muted-foreground">教學區域</span>
-                  <span className="col-span-2">{selectedInstructor.teachingArea.join(', ')}</span>
-                </div>
-                <div className="grid grid-cols-3 items-start gap-x-4 gap-y-2">
-                  <span className="text-muted-foreground">教學歷程</span>
-                  <span className="col-span-2">{selectedInstructor.teachingHistory.join('; ')}</span>
-                </div>
-                <div className="grid grid-cols-3 items-center gap-x-4 gap-y-2">
-                  <span className="text-muted-foreground">講師Level</span>
-                  <span className="col-span-2">{selectedInstructor.level}</span>
-                </div>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
-
-    

@@ -62,7 +62,7 @@ export function ResumesPage() {
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="w-full space-y-4">
         <h1 className="text-3xl font-bold tracking-tight">講師履歷</h1>
         <Card>
           <CardHeader>
@@ -130,45 +130,57 @@ export function ResumesPage() {
       </div>
 
       <Dialog open={!!selectedApp} onOpenChange={() => setSelectedApp(null)}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-md">
           {selectedApp && (
             <>
               <DialogHeader>
-                <div className="flex items-center gap-4">
-                  <Avatar className="w-16 h-16">
-                    <AvatarImage src={selectedApp.instructor.avatarUrl} />
-                    <AvatarFallback>
-                      {selectedApp.instructor.name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <DialogTitle className="text-2xl">
-                      {selectedApp.instructor.name}
-                    </DialogTitle>
-                    <DialogDescription>
-                      {selectedApp.instructor.specialties.join(" / ")}
-                    </DialogDescription>
-                  </div>
-                </div>
+                <DialogTitle>{selectedApp.instructor.name} - 詳細資料</DialogTitle>
+                <DialogDescription>
+                  講師的個人背景與相關資訊。
+                </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <span className="text-right text-muted-foreground">信箱</span>
-                  <span className="col-span-3">
-                    {selectedApp.instructor.email}
-                  </span>
+              <div className="grid gap-4 py-4 text-sm">
+                <div className="grid grid-cols-3 items-center gap-x-4 gap-y-2">
+                  <span className="text-muted-foreground">性別</span>
+                  <span className="col-span-2">{selectedApp.instructor.gender}</span>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <span className="text-right text-muted-foreground">電話</span>
-                  <span className="col-span-3">
-                    {selectedApp.instructor.phone}
-                  </span>
+                 <div className="grid grid-cols-3 items-center gap-x-4 gap-y-2">
+                  <span className="text-muted-foreground">年齡</span>
+                  <span className="col-span-2">{selectedApp.instructor.age}</span>
                 </div>
-                <div className="grid grid-cols-4 items-start gap-4">
-                  <span className="text-right text-muted-foreground pt-1">
+                <div className="grid grid-cols-3 items-center gap-x-4 gap-y-2">
+                  <span className="text-muted-foreground">Email</span>
+                  <span className="col-span-2">{selectedApp.instructor.email}</span>
+                </div>
+                <div className="grid grid-cols-3 items-center gap-x-4 gap-y-2">
+                  <span className="text-muted-foreground">Phone</span>
+                  <span className="col-span-2">{selectedApp.instructor.phone}</span>
+                </div>
+                <div className="grid grid-cols-3 items-center gap-x-4 gap-y-2">
+                  <span className="text-muted-foreground">金融帳號</span>
+                  <span className="col-span-2">{selectedApp.instructor.bankAccount}</span>
+                </div>
+                 <div className="grid grid-cols-3 items-start gap-x-4 gap-y-2">
+                  <span className="text-muted-foreground">專長</span>
+                  <span className="col-span-2">{selectedApp.instructor.specialties.join(', ')}</span>
+                </div>
+                <div className="grid grid-cols-3 items-start gap-x-4 gap-y-2">
+                  <span className="text-muted-foreground">教學區域</span>
+                  <span className="col-span-2">{selectedApp.instructor.teachingArea.join(', ')}</span>
+                </div>
+                <div className="grid grid-cols-3 items-start gap-x-4 gap-y-2">
+                  <span className="text-muted-foreground">教學歷程</span>
+                  <span className="col-span-2">{selectedApp.instructor.teachingHistory.join('; ')}</span>
+                </div>
+                <div className="grid grid-cols-3 items-center gap-x-4 gap-y-2">
+                  <span className="text-muted-foreground">講師Level</span>
+                  <span className="col-span-2">{selectedApp.instructor.level}</span>
+                </div>
+                 <div className="grid grid-cols-3 items-start gap-x-4 gap-y-2">
+                  <span className="text-muted-foreground pt-1">
                     簡介
                   </span>
-                  <p className="col-span-3 text-sm">
+                  <p className="col-span-2">
                     {selectedApp.instructor.bio}
                   </p>
                 </div>
