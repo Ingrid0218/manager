@@ -19,9 +19,10 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
-import { applications, courses } from "@/lib/data";
+import { applications } from "@/lib/data";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { notosans } from "@/lib/fonts";
 
 type BillingSummary = {
   instructorId: string;
@@ -33,11 +34,14 @@ type BillingSummary = {
 };
 
 export function BillingPage() {
-  const acceptedInstructors = applications
-    .filter((app) => app.status === "Accepted")
-    .map((app) => app.instructor);
+  const acceptedApplications = applications.filter(
+    (app) => app.status === "Accepted"
+  );
+  const courses = acceptedApplications.flatMap(app => app.courses || []);
 
-  const billingData: BillingSummary[] = acceptedInstructors.map((instructor) => {
+
+  const billingData: BillingSummary[] = acceptedApplications.map((app) => {
+    const instructor = app.instructor;
     const instructorCourses = courses.filter(
       (c) => c.instructorId === instructor.id
     );
@@ -63,6 +67,9 @@ export function BillingPage() {
 
   const exportPDF = () => {
     const doc = new jsPDF();
+    doc.addFileToVFS("NotoSansTC-Regular.ttf", notosans);
+    doc.addFont("NotoSansTC-Regular.ttf", "NotoSansTC", "normal");
+    doc.setFont("NotoSansTC");
 
     const tableColumn = ["講師姓名", "授課堂數", "鐘點費 (元/小時)", "總時數 (小時)", "總費用 (元)"];
     const tableRows: (string | number)[][] = [];
@@ -87,7 +94,7 @@ export function BillingPage() {
         doc.text("講師費用總覽", data.settings.margin.left, 15);
       },
       styles: {
-        font: 'NotoSansTC', // Specify the font here
+        font: 'NotoSansTC',
         fontStyle: 'normal',
       },
       headStyles: {

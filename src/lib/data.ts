@@ -14,6 +14,8 @@ export type Application = {
   instructorId: string;
   date: string;
   status: 'Pending' | 'Reviewed' | 'Accepted' | 'Rejected';
+  instructor: Instructor;
+  courses?: Course[];
 };
 
 export type Course = {
@@ -39,7 +41,15 @@ export type CourseFeedback = {
   attendeeName: string;
 };
 
-export const instructors: Instructor[] = [
+const getCourseDate = (day: number, hour: number, monthOffset = 0) => {
+  const date = new Date();
+  date.setMonth(date.getMonth() + monthOffset);
+  date.setDate(day);
+  date.setHours(hour, 0, 0, 0);
+  return date;
+};
+
+const instructors: Instructor[] = [
   { id: '1', name: '王老師 (Wang Laoshi)', avatarUrl: 'https://picsum.photos/seed/wang/100/100', email: 'wang.l@example.com', phone: '0912-345-678', specialties: ['音樂療法', '藝術創作'], bio: '擁有超過10年的音樂治療經驗，擅長利用音樂改善長者的情緒與認知功能。', hourlyRate: 800 },
   { id: '2', name: '陳老師 (Chen Laoshi)', avatarUrl: 'https://picsum.photos/seed/chen/100/100', email: 'chen.l@example.com', phone: '0923-456-789', specialties: ['體適能', '健康操'], bio: '專業體適能教練，為長者設計安全有效的運動課程，充滿活力與熱情。', hourlyRate: 750 },
   { id: '3', name: '林老師 (Lin Laoshi)', avatarUrl: 'https://picsum.photos/seed/lin/100/100', email: 'lin.l@example.com', phone: '0934-567-890', specialties: ['園藝治療', '手工藝'], bio: '透過植物與手作，引導長者感受生命力，促進手眼協調與身心放鬆。', hourlyRate: 700 },
@@ -50,12 +60,23 @@ export const instructors: Instructor[] = [
   { id: '8', name: '周老師 (Zhou Laoshi)', avatarUrl: 'https://picsum.photos/seed/zhou/100/100', email: 'zhou.l@example.com', phone: '0989-012-345', specialties: ['手機攝影', '影片剪輯'], bio: '專長為數位影像教學，耐心指導長者學習使用智慧型手機，記錄生活點滴。', hourlyRate: 730 },
 ];
 
-export const applications: (Application & { instructor: Instructor })[] = [
-  { id: 'app1', instructorId: '1', date: '2024-05-20', status: 'Accepted', instructor: instructors[0] },
-  { id: 'app2', instructorId: '2', date: '2024-05-22', status: 'Accepted', instructor: instructors[1] },
-  { id: 'app3', instructorId: '3', date: '2024-05-25', status: 'Accepted', instructor: instructors[2] },
-  { id: 'app4', instructorId: '4', date: '2024-05-28', status: 'Accepted', instructor: instructors[3] },
-  { id: 'app5', instructorId: '5', date: '2024-06-01', status: 'Accepted', instructor: instructors[4] },
+const courses: Course[] = [
+  { id: 'c1', title: '懷舊金曲歡唱', instructorId: '1', locationId: 'loc1', startTime: getCourseDate(8, 10), endTime: getCourseDate(8, 11) },
+  { id: 'c2', title: '活力健康操', instructorId: '2', locationId: 'loc2', startTime: getCourseDate(8, 14), endTime: getCourseDate(8, 15) },
+  { id: 'c3', title: '迷你盆栽DIY', instructorId: '3', locationId: 'loc3', startTime: getCourseDate(12, 10), endTime: getCourseDate(12, 11) },
+  { id: 'c4', title: '益智桌遊派對', instructorId: '4', locationId: 'loc1', startTime: getCourseDate(12, 15), endTime: getCourseDate(12, 16) },
+  { id: 'c5', title: '創意輕食烘焙', instructorId: '5', locationId: 'loc2', startTime: getCourseDate(18, 9), endTime: getCourseDate(18, 10) },
+  { id: 'c6', title: '節奏打擊樂', instructorId: '1', locationId: 'loc3', startTime: getCourseDate(18, 14), endTime: getCourseDate(18, 15) },
+  { id: 'c7', 'title': '下肢肌力訓練', 'instructorId': '2', 'locationId': 'loc1', 'startTime': getCourseDate(22, 10), 'endTime': getCourseDate(22, 11) },
+  { id: 'c8', 'title': '手作編織小物', 'instructorId': '3', 'locationId': 'loc2', 'startTime': getCourseDate(25, 14), 'endTime': getCourseDate(25, 15) },
+];
+
+export const applications: Application[] = [
+  { id: 'app1', instructorId: '1', date: '2024-05-20', status: 'Accepted', instructor: instructors[0], courses: courses.filter(c => c.instructorId === '1') },
+  { id: 'app2', instructorId: '2', date: '2024-05-22', status: 'Accepted', instructor: instructors[1], courses: courses.filter(c => c.instructorId === '2') },
+  { id: 'app3', instructorId: '3', date: '2024-05-25', status: 'Accepted', instructor: instructors[2], courses: courses.filter(c => c.instructorId === '3') },
+  { id: 'app4', instructorId: '4', date: '2024-05-28', status: 'Accepted', instructor: instructors[3], courses: courses.filter(c => c.instructorId === '4') },
+  { id: 'app5', instructorId: '5', date: '2024-06-01', status: 'Accepted', instructor: instructors[4], courses: courses.filter(c => c.instructorId === '5') },
   { id: 'app6', instructorId: '6', date: '2024-06-02', status: 'Reviewed', instructor: instructors[5] },
   { id: 'app7', instructorId: '7', date: '2024-06-03', status: 'Pending', instructor: instructors[6] },
   { id: 'app8', instructorId: '8', date: '2024-06-04', status: 'Rejected', instructor: instructors[7] },
@@ -65,25 +86,6 @@ export const locations: Location[] = [
   { id: 'loc1', name: '桃米里', address: '台北市信義區市府路1號' },
   { id: 'loc2', name: '向善里', address: '台北市大安區新生南路二段1號' },
   { id: 'loc3', name: '福興里', address: '台北市中山區中山北路二段48巷7號' },
-];
-
-const getCourseDate = (day: number, hour: number, monthOffset = 0) => {
-  const date = new Date();
-  date.setMonth(date.getMonth() + monthOffset);
-  date.setDate(day);
-  date.setHours(hour, 0, 0, 0);
-  return date;
-};
-
-export const courses: Course[] = [
-  { id: 'c1', title: '懷舊金曲歡唱', instructorId: '1', locationId: 'loc1', startTime: getCourseDate(8, 10), endTime: getCourseDate(8, 11) },
-  { id: 'c2', title: '活力健康操', instructorId: '2', locationId: 'loc2', startTime: getCourseDate(8, 14), endTime: getCourseDate(8, 15) },
-  { id: 'c3', title: '迷你盆栽DIY', instructorId: '3', locationId: 'loc3', startTime: getCourseDate(12, 10), endTime: getCourseDate(12, 11) },
-  { id: 'c4', title: '益智桌遊派對', instructorId: '4', locationId: 'loc1', startTime: getCourseDate(12, 15), endTime: getCourseDate(12, 16) },
-  { id: 'c5', title: '創意輕食烘焙', instructorId: '5', locationId: 'loc2', startTime: getCourseDate(18, 9), endTime: getCourseDate(18, 10) },
-  { id: 'c6', title: '節奏打擊樂', instructorId: '1', locationId: 'loc3', startTime: getCourseDate(18, 14), endTime: getCourseDate(18, 15) },
-  { id: 'c7', 'title': '下肢肌力訓練', 'instructorId': '2', 'locationId': 'loc1', 'startTime': getCourseDate(22, 10), 'endTime': getCourseDate(22, 11) },
-  { id: 'c8', 'title': '手作編織小物', 'instructorId': '3', 'locationId': 'loc2', 'startTime': getCourseDate(25, 14), 'endTime': getCourseDate(25, 15) },
 ];
 
 export const courseFeedback: (CourseFeedback & { courseTitle: string, instructorName: string })[] = [
