@@ -86,6 +86,13 @@ export function BillingPage() {
         doc.setFontSize(18);
         doc.text("講師費用總覽", data.settings.margin.left, 15);
       },
+      styles: {
+        font: 'NotoSansTC', // Specify the font here
+        fontStyle: 'normal',
+      },
+      headStyles: {
+        fontStyle: 'bold',
+      }
     });
 
     const finalY = (doc as any).lastAutoTable.finalY;
@@ -139,7 +146,7 @@ export function BillingPage() {
                   <TableCell className="text-right hidden sm:table-cell">
                     {data.hourlyRate.toLocaleString()} 元/小時
                   </TableCell>
-                  <TableCell className="text-right hidden sm-table-cell">
+                  <TableCell className="text-right hidden sm:table-cell">
                     {data.totalHours} 小時
                   </TableCell>
                   <TableCell className="text-right font-semibold">
