@@ -62,7 +62,7 @@ export function ResumesPage() {
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-4 w-full">
         <h1 className="text-3xl font-bold tracking-tight">講師履歷</h1>
         <Card>
           <CardHeader>
