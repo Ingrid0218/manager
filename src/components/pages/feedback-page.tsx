@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import * as React from "react";
+import * as React from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion";
+} from '@/components/ui/accordion';
 import {
   BarChart,
   Bar,
@@ -21,14 +21,14 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-} from "recharts";
-import { courseFeedback, type CourseFeedback } from "@/lib/data";
-import { Star, User } from "lucide-react";
+} from 'recharts';
+import { courseFeedback, type CourseFeedback } from '@/lib/data';
+import { Star, User } from 'lucide-react';
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart";
+} from '@/components/ui/chart';
 
 interface FeedbackGroup {
   courseId: string;
@@ -83,8 +83,8 @@ export function FeedbackPage() {
 
   const chartConfig = {
     count: {
-      label: "人數",
-      color: "hsl(var(--primary))",
+      label: '人數',
+      color: 'hsl(var(--primary))',
     },
   };
 
@@ -95,8 +95,8 @@ export function FeedbackPage() {
           key={i}
           className={`w-4 h-4 ${
             i < Math.round(rating)
-              ? "text-yellow-400 fill-yellow-400"
-              : "text-muted-foreground/50"
+              ? 'text-yellow-400 fill-yellow-400'
+              : 'text-muted-foreground/50'
           }`}
         />
       ))}
@@ -106,7 +106,7 @@ export function FeedbackPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-3xl font-bold tracking-tight">課程評鑑</h1>
-      <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
         {groupedFeedback.map((group) => (
           <Card key={group.courseId}>
             <CardHeader>
@@ -164,14 +164,16 @@ export function FeedbackPage() {
                     <div className="space-y-3 max-h-40 overflow-y-auto pr-2">
                       {group.feedbacks.map((fb) => (
                         <div key={fb.id} className="text-sm">
-                           <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2 font-medium">
-                                <User className="w-4 h-4 text-muted-foreground" />
-                                {fb.attendeeName}
-                              </div>
-                              <StarRating rating={fb.rating} />
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 font-medium">
+                              <User className="w-4 h-4 text-muted-foreground" />
+                              {fb.attendeeName}
                             </div>
-                           <p className="pl-6 text-muted-foreground">{fb.comment}</p>
+                            <StarRating rating={fb.rating} />
+                          </div>
+                          <p className="pl-6 text-muted-foreground">
+                            {fb.comment}
+                          </p>
                         </div>
                       ))}
                     </div>

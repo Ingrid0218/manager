@@ -1,32 +1,32 @@
-"use client";
+'use client';
 
-import * as React from "react";
+import * as React from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
+} from '@/components/ui/card';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { courses, instructors, locations } from "@/lib/data";
-import { format, isSameDay } from "date-fns";
-import { zhTW } from "date-fns/locale";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { courses, instructors, locations } from '@/lib/data';
+import { format, isSameDay } from 'date-fns';
+import { zhTW } from 'date-fns/locale';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 
 export function SchedulerPage() {
   const [date, setDate] = React.useState<Date | undefined>(undefined);
-  const [instructorFilter, setInstructorFilter] = React.useState<string>("all");
-  const [locationFilter, setLocationFilter] = React.useState<string>("all");
+  const [instructorFilter, setInstructorFilter] = React.useState<string>('all');
+  const [locationFilter, setLocationFilter] = React.useState<string>('all');
 
   const [isClient, setIsClient] = React.useState(false);
   React.useEffect(() => {
@@ -39,27 +39,26 @@ export function SchedulerPage() {
       .filter((course) => date && isSameDay(course.startTime, date))
       .filter(
         (course) =>
-          instructorFilter === "all" || course.instructorId === instructorFilter
+          instructorFilter === 'all' || course.instructorId === instructorFilter
       )
       .filter(
         (course) =>
-          locationFilter === "all" || course.locationId === locationFilter
+          locationFilter === 'all' || course.locationId === locationFilter
       );
   }, [date, instructorFilter, locationFilter]);
-  
+
   const eventsOnSelectedDate =
-    date && courses.filter((course) => isSameDay(course.startTime, date)).length > 0;
+    date &&
+    courses.filter((course) => isSameDay(course.startTime, date)).length > 0;
 
   return (
     <div className="space-y-4">
       <h1 className="text-3xl font-bold tracking-tight">講師排班</h1>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>課程行事曆</CardTitle>
-            <CardDescription>
-              點擊日期查看當天的課程安排。
-            </CardDescription>
+            <CardDescription>點擊日期查看當天的課程安排。</CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
             {isClient && (
@@ -72,10 +71,13 @@ export function SchedulerPage() {
                 month={date}
                 onMonthChange={(newMonth) => {
                   const today = new Date();
-                  if (newMonth.getMonth() !== today.getMonth() || newMonth.getFullYear() !== today.getFullYear()) {
-                     const newDate = new Date(newMonth);
-                     newDate.setDate(1);
-                     setDate(newDate);
+                  if (
+                    newMonth.getMonth() !== today.getMonth() ||
+                    newMonth.getFullYear() !== today.getFullYear()
+                  ) {
+                    const newDate = new Date(newMonth);
+                    newDate.setDate(1);
+                    setDate(newDate);
                   } else {
                     setDate(today);
                   }
@@ -85,8 +87,8 @@ export function SchedulerPage() {
                 }}
                 modifiersStyles={{
                   events: {
-                    color: "hsl(var(--primary-foreground))",
-                    backgroundColor: "hsl(var(--primary))",
+                    color: 'hsl(var(--primary-foreground))',
+                    backgroundColor: 'hsl(var(--primary))',
                   },
                 }}
               />
@@ -96,7 +98,9 @@ export function SchedulerPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              {date ? format(date, "yyyy年MM月dd日", { locale: zhTW }) : "選擇日期"}
+              {date
+                ? format(date, 'yyyy年MM月dd日', { locale: zhTW })
+                : '選擇日期'}
             </CardTitle>
             <CardDescription>當日課程列表</CardDescription>
           </CardHeader>
@@ -150,20 +154,20 @@ export function SchedulerPage() {
                       >
                         <h4 className="font-semibold">{course.title}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {format(course.startTime, "HH:mm")} -{" "}
-                          {format(course.endTime, "HH:mm")}
+                          {format(course.startTime, 'HH:mm')} -{' '}
+                          {format(course.endTime, 'HH:mm')}
                         </p>
                         <div className="flex justify-between items-center mt-2">
-                           <Badge variant="secondary">{instructor?.name}</Badge>
-                           <Badge variant="outline">{location?.name}</Badge>
+                          <Badge variant="secondary">{instructor?.name}</Badge>
+                          <Badge variant="outline">{location?.name}</Badge>
                         </div>
                       </div>
                     );
                   })
                 ) : (
-                   <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                      <p>{date ? "本日無課程安排" : "請選擇日期"}</p>
-                    </div>
+                  <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                    <p>{date ? '本日無課程安排' : '請選擇日期'}</p>
+                  </div>
                 )}
               </div>
             </ScrollArea>
