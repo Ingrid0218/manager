@@ -21,7 +21,6 @@ import { Download } from "lucide-react";
 import { applications } from "@/lib/data";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { notosans } from "@/lib/fonts";
 
 type BillingSummary = {
   instructorId: string;
@@ -65,48 +64,50 @@ export function BillingPage() {
   const totalAmount = billingData.reduce((sum, data) => sum + data.totalFee, 0);
 
   const exportPDF = () => {
-    const doc = new jsPDF();
-    doc.addFileToVFS("NotoSansTC-Regular.ttf", notosans);
-    doc.addFont("NotoSansTC-Regular.ttf", "NotoSansTC", "normal");
-    doc.setFont("NotoSansTC");
+    (async () => {
+      const { notosans } = await import("@/lib/fonts");
+      const doc = new jsPDF();
+      doc.addFileToVFS("NotoSansTC-Regular.ttf", notosans);
+      doc.addFont("NotoSansTC-Regular.ttf", "NotoSansTC", "normal");
+      doc.setFont("NotoSansTC");
 
-    const tableColumn = ["講師姓名", "授課堂數", "鐘點費 (元/小時)", "總時數 (小時)", "總費用 (元)"];
-    const tableRows: (string | number)[][] = [];
+      const tableColumn = ["講師姓名", "授課堂數", "鐘點費 (元/小時)", "總時數 (小時)", "總費用 (元)"];
+      const tableRows: (string | number)[][] = [];
 
-    billingData.forEach(data => {
-      const rowData = [
-        data.instructorName,
-        data.courseCount,
-        data.hourlyRate.toLocaleString(),
-        data.totalHours,
-        data.totalFee.toLocaleString(),
-      ];
-      tableRows.push(rowData);
-    });
+      billingData.forEach(data => {
+        const rowData = [
+          data.instructorName,
+          data.courseCount,
+          data.hourlyRate.toLocaleString(),
+          data.totalHours,
+          data.totalFee.toLocaleString(),
+        ];
+        tableRows.push(rowData);
+      });
 
-    autoTable(doc, {
-      head: [tableColumn],
-      body: tableRows,
-      startY: 20,
-      didDrawPage: function (data) {
-        doc.setFontSize(18);
-        doc.text("講師費用總覽", data.settings.margin.left, 15);
-      },
-      styles: {
-        font: 'NotoSansTC',
-        fontStyle: 'normal',
-      },
-      headStyles: {
-        fontStyle: 'bold',
-      }
-    });
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 20,
+        didDrawPage: function (data) {
+          doc.setFontSize(18);
+          doc.text("講師費用總覽", data.settings.margin.left, 15);
+        },
+        styles: {
+          font: 'NotoSansTC',
+          fontStyle: 'normal',
+        },
+        headStyles: {
+          fontStyle: 'bold',
+        }
+      });
 
-    const finalY = (doc as any).lastAutoTable.finalY;
-    doc.setFontSize(12);
-    doc.text(`總計: ${totalAmount.toLocaleString()} 元`, 14, finalY + 10);
+      const finalY = (doc as any).lastAutoTable.finalY;
+      doc.setFontSize(12);
+      doc.text(`總計: ${totalAmount.toLocaleString()} 元`, 14, finalY + 10);
 
-
-    doc.save("billing-report.pdf");
+      doc.save("billing-report.pdf");
+    })();
   };
 
   return (
