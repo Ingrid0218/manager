@@ -64,11 +64,6 @@ export function BillingPage() {
   const exportPDF = () => {
     const doc = new jsPDF();
 
-    // Add font that supports Chinese characters
-    // This is a generic font, for better results, you might need to host your own font file
-    doc.addFont('public/NotoSansTC-Regular.ttf', 'NotoSansTC', 'normal');
-    doc.setFont('NotoSansTC');
-
     const tableColumn = ["講師姓名", "授課堂數", "鐘點費 (元/小時)", "總時數 (小時)", "總費用 (元)"];
     const tableRows: (string | number)[][] = [];
 
@@ -91,14 +86,6 @@ export function BillingPage() {
         doc.setFontSize(18);
         doc.text("講師費用總覽", data.settings.margin.left, 15);
       },
-      styles: {
-        font: 'NotoSansTC',
-        fontStyle: 'normal',
-      },
-      headStyles: {
-        font: 'NotoSansTC',
-        fontStyle: 'normal',
-      }
     });
 
     const finalY = (doc as any).lastAutoTable.finalY;
