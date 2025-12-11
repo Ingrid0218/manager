@@ -1,3 +1,4 @@
+
 export type Instructor = {
   id: string;
   name: string;
@@ -7,6 +8,12 @@ export type Instructor = {
   specialties: string[];
   bio: string;
   hourlyRate: number;
+  gender: '男性' | '女性' | '其他';
+  age: number;
+  bankAccount: string;
+  teachingArea: string[];
+  teachingHistory: string[];
+  level: string;
 };
 
 export type Application = {
@@ -50,14 +57,14 @@ const getCourseDate = (day: number, hour: number, monthOffset = 0) => {
 };
 
 export const instructors: Instructor[] = [
-  { id: '1', name: '王老師 (Wang Laoshi)', avatarUrl: 'https://picsum.photos/seed/wang/100/100', email: 'wang.l@example.com', phone: '0912-345-678', specialties: ['音樂療法', '藝術創作'], bio: '擁有超過10年的音樂治療經驗，擅長利用音樂改善長者的情緒與認知功能。', hourlyRate: 800 },
-  { id: '2', name: '陳老師 (Chen Laoshi)', avatarUrl: 'https://picsum.photos/seed/chen/100/100', email: 'chen.l@example.com', phone: '0923-456-789', specialties: ['體適能', '健康操'], bio: '專業體適能教練，為長者設計安全有效的運動課程，充滿活力與熱情。', hourlyRate: 750 },
-  { id: '3', name: '林老師 (Lin Laoshi)', avatarUrl: 'https://picsum.photos/seed/lin/100/100', email: 'lin.l@example.com', phone: '0934-567-890', specialties: ['園藝治療', '手工藝'], bio: '透過植物與手作，引導長者感受生命力，促進手眼協調與身心放鬆。', hourlyRate: 700 },
-  { id: '4', name: '李老師 (Li Laoshi)', avatarUrl: 'https://picsum.photos/seed/li/100/100', email: 'li.l@example.com', phone: '0945-678-901', specialties: ['桌遊', '認知訓練'], bio: '利用有趣的桌遊活動，活化長者腦力，預防失智，營造歡樂的學習氛圍。', hourlyRate: 720 },
-  { id: '5', name: '張老師 (Zhang Laoshi)', avatarUrl: 'https://picsum.photos/seed/zhang/100/100', email: 'zhang.l@example.com', phone: '0956-789-012', specialties: ['烹飪', '營養學'], bio: '帶領長者製作簡單又營養的點心，分享健康飲食知識，享受動手做的樂趣。', hourlyRate: 780 },
-  { id: '6', name: '黃老師 (Huang Laoshi)', avatarUrl: 'https://picsum.photos/seed/huang/100/100', email: 'huang.l@example.com', phone: '0967-890-123', specialties: ['心理諮商', '正念引導'], bio: '具備專業心理諮商背景，擅長傾聽並引導長者進行正念練習，協助處理情緒困擾。', hourlyRate: 900 },
-  { id: '7', name: '許老師 (Xu Laoshi)', avatarUrl: 'https://picsum.photos/seed/xu/100/100', email: 'xu.l@example.com', phone: '0978-901-234', specialties: ['書法', '國畫'], bio: '書法及國畫藝術家，教學經驗豐富，能帶領長者在筆墨之間陶冶性情、靜心養性。', hourlyRate: 850 },
-  { id: '8', name: '周老師 (Zhou Laoshi)', avatarUrl: 'https://picsum.photos/seed/zhou/100/100', email: 'zhou.l@example.com', phone: '0989-012-345', specialties: ['手機攝影', '影片剪輯'], bio: '專長為數位影像教學，耐心指導長者學習使用智慧型手機，記錄生活點滴。', hourlyRate: 730 },
+  { id: '1', name: '王老師 (Wang Laoshi)', avatarUrl: 'https://picsum.photos/seed/wang/100/100', email: 'wang.l@example.com', phone: '0912-345-678', specialties: ['音樂療法', '藝術創作'], bio: '擁有超過10年的音樂治療經驗，擅長利用音樂改善長者的情緒與認知功能。', hourlyRate: 800, gender: '女性', age: 45, bankAccount: '123-456-789012', teachingArea: ['桃米里', '向善里'], teachingHistory: ['2020-現在: 埔里基督教醫院', '2015-2019: 台中榮總'], level: '資深講師' },
+  { id: '2', name: '陳老師 (Chen Laoshi)', avatarUrl: 'https://picsum.photos/seed/chen/100/100', email: 'chen.l@example.com', phone: '0923-456-789', specialties: ['體適能', '健康操'], bio: '專業體適能教練，為長者設計安全有效的運動課程，充滿活力與熱情。', hourlyRate: 750, gender: '男性', age: 38, bankAccount: '234-567-890123', teachingArea: ['向善里', '福興里'], teachingHistory: ['2021-現在: 埔里基督教醫院'], level: '中階講師' },
+  { id: '3', name: '林老師 (Lin Laoshi)', avatarUrl: 'https://picsum.photos/seed/lin/100/100', email: 'lin.l@example.com', phone: '0934-567-890', specialties: ['園藝治療', '手工藝'], bio: '透過植物與手作，引導長者感受生命力，促進手眼協調與身心放鬆。', hourlyRate: 700, gender: '女性', age: 52, bankAccount: '345-678-901234', teachingArea: ['桃米里', '福興里'], teachingHistory: ['2019-現在: 埔里基督教醫院', '2017-2018: 社區大學園藝講師'], level: '資深講師' },
+  { id: '4', name: '李老師 (Li Laoshi)', avatarUrl: 'https://picsum.photos/seed/li/100/100', email: 'li.l@example.com', phone: '0945-678-901', specialties: ['桌遊', '認知訓練'], bio: '利用有趣的桌遊活動，活化長者腦力，預防失智，營造歡樂的學習氛圍。', hourlyRate: 720, gender: '男性', age: 33, bankAccount: '456-789-012345', teachingArea: ['所有據點'], teachingHistory: ['2022-現在: 埔里基督教醫院'], level: '初階講師' },
+  { id: '5', name: '張老師 (Zhang Laoshi)', avatarUrl: 'https://picsum.photos/seed/zhang/100/100', email: 'zhang.l@example.com', phone: '0956-789-012', specialties: ['烹飪', '營養學'], bio: '帶領長者製作簡單又營養的點心，分享健康飲食知識，享受動手做的樂趣。', hourlyRate: 780, gender: '女性', age: 48, bankAccount: '567-890-123456', teachingArea: ['向善里'], teachingHistory: ['2018-現在: 埔里基督教醫院', '2012-2017: 烹飪教室老師'], level: '資深講師' },
+  { id: '6', name: '黃老師 (Huang Laoshi)', avatarUrl: 'https://picsum.photos/seed/huang/100/100', email: 'huang.l@example.com', phone: '0967-890-123', specialties: ['心理諮商', '正念引導'], bio: '具備專業心理諮商背景，擅長傾聽並引導長者進行正念練習，協助處理情緒困擾。', hourlyRate: 900, gender: '男性', age: 55, bankAccount: '678-901-234567', teachingArea: ['福興里'], teachingHistory: ['2023-現在: 埔里基督教醫院'], level: '高階講師' },
+  { id: '7', name: '許老師 (Xu Laoshi)', avatarUrl: 'https://picsum.photos/seed/xu/100/100', email: 'xu.l@example.com', phone: '0978-901-234', specialties: ['書法', '國畫'], bio: '書法及國畫藝術家，教學經驗豐富，能帶領長者在筆墨之間陶冶性情、靜心養性。', hourlyRate: 850, gender: '女性', age: 60, bankAccount: '789-012-345678', teachingArea: ['桃米里'], teachingHistory: ['2021-現在: 埔里基督教醫院'], level: '高階講師' },
+  { id: '8', name: '周老師 (Zhou Laoshi)', avatarUrl: 'https://picsum.photos/seed/zhou/100/100', email: 'zhou.l@example.com', phone: '0989-012-345', specialties: ['手機攝影', '影片剪輯'], bio: '專長為數位影像教學，耐心指導長者學習使用智慧型手機，記錄生活點滴。', hourlyRate: 730, gender: '男性', age: 29, bankAccount: '890-123-456789', teachingArea: ['向善里'], teachingHistory: ['2023-現在: 埔里基督教醫院'], level: '初階講師' },
 ];
 
 export const courses: Course[] = [
@@ -97,3 +104,5 @@ export const courseFeedback: (CourseFeedback & { courseTitle: string, instructor
     { id: 'f6', courseId: 'c4', rating: 3, comment: '有些遊戲規則對長輩來說有點複雜。', attendeeName: '家屬F', courseTitle: '益智桌遊派對', instructorName: instructors[3].name },
     { id: 'f7', courseId: 'c5', rating: 5, comment: '點心很好吃，大家都學得很開心。', attendeeName: '家屬G', courseTitle: '創意輕食烘焙', instructorName: instructors[4].name },
 ];
+
+    
