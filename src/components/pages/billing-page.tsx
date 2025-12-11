@@ -1,3 +1,6 @@
+
+'use client';
+
 import {
   Table,
   TableBody,
@@ -17,6 +20,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { applications, courses } from "@/lib/data";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 type BillingSummary = {
   instructorId: string;
@@ -56,11 +61,59 @@ export function BillingPage() {
   
   const totalAmount = billingData.reduce((sum, data) => sum + data.totalFee, 0);
 
+  const exportPDF = () => {
+    const doc = new jsPDF();
+
+    // Add font that supports Chinese characters
+    // This is a generic font, for better results, you might need to host your own font file
+    doc.addFont('public/NotoSansTC-Regular.ttf', 'NotoSansTC', 'normal');
+    doc.setFont('NotoSansTC');
+
+    const tableColumn = ["講師姓名", "授課堂數", "鐘點費 (元/小時)", "總時數 (小時)", "總費用 (元)"];
+    const tableRows: (string | number)[][] = [];
+
+    billingData.forEach(data => {
+      const rowData = [
+        data.instructorName,
+        data.courseCount,
+        data.hourlyRate.toLocaleString(),
+        data.totalHours,
+        data.totalFee.toLocaleString(),
+      ];
+      tableRows.push(rowData);
+    });
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 20,
+      didDrawPage: function (data) {
+        doc.setFontSize(18);
+        doc.text("講師費用總覽", data.settings.margin.left, 15);
+      },
+      styles: {
+        font: 'NotoSansTC',
+        fontStyle: 'normal',
+      },
+      headStyles: {
+        font: 'NotoSansTC',
+        fontStyle: 'normal',
+      }
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY;
+    doc.setFontSize(12);
+    doc.text(`總計: ${totalAmount.toLocaleString()} 元`, 14, finalY + 10);
+
+
+    doc.save("billing-report.pdf");
+  };
+
   return (
     <div className="space-y-4">
        <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">費用結算</h1>
-          <Button>
+          <Button onClick={exportPDF}>
             <Download className="mr-2 h-4 w-4" />
             匯出報表
           </Button>
