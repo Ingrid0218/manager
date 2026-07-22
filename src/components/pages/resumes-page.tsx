@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { applications, type Instructor, type Application } from "@/lib/data";
 import { Button } from "@/components/ui/button";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 type ApplicationWithInstructor = Application & { instructor: Instructor };
 
@@ -46,7 +47,7 @@ export function ResumesPage() {
         return "destructive";
     }
   };
-  
+
   const getStatusText = (status: Application["status"]) => {
     switch (status) {
       case "Accepted":
@@ -61,7 +62,7 @@ export function ResumesPage() {
   };
 
   return (
-    <>
+    <ProtectedRoute>
       <div className="w-full space-y-4">
         <h1 className="text-3xl font-bold tracking-tight">講師履歷</h1>
         <Card>
@@ -119,7 +120,7 @@ export function ResumesPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                       <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedApp(app); }}>查看</Button>
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedApp(app); }}>查看</Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -144,7 +145,7 @@ export function ResumesPage() {
                   <span className="text-muted-foreground">性別</span>
                   <span className="col-span-2">{selectedApp.instructor.gender}</span>
                 </div>
-                 <div className="grid grid-cols-3 items-center gap-x-4 gap-y-2">
+                <div className="grid grid-cols-3 items-center gap-x-4 gap-y-2">
                   <span className="text-muted-foreground">年齡</span>
                   <span className="col-span-2">{selectedApp.instructor.age}</span>
                 </div>
@@ -160,7 +161,7 @@ export function ResumesPage() {
                   <span className="text-muted-foreground">金融帳號</span>
                   <span className="col-span-2">{selectedApp.instructor.bankAccount}</span>
                 </div>
-                 <div className="grid grid-cols-3 items-start gap-x-4 gap-y-2">
+                <div className="grid grid-cols-3 items-start gap-x-4 gap-y-2">
                   <span className="text-muted-foreground">專長</span>
                   <span className="col-span-2">{selectedApp.instructor.specialties.join(', ')}</span>
                 </div>
@@ -176,7 +177,7 @@ export function ResumesPage() {
                   <span className="text-muted-foreground">講師Level</span>
                   <span className="col-span-2">{selectedApp.instructor.level}</span>
                 </div>
-                 <div className="grid grid-cols-3 items-start gap-x-4 gap-y-2">
+                <div className="grid grid-cols-3 items-start gap-x-4 gap-y-2">
                   <span className="text-muted-foreground pt-1">
                     簡介
                   </span>
@@ -189,6 +190,6 @@ export function ResumesPage() {
           )}
         </DialogContent>
       </Dialog>
-    </>
+    </ProtectedRoute>
   );
 }
