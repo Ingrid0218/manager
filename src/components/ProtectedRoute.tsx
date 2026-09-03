@@ -19,13 +19,13 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
   const router = useRouter();
 
   useEffect(() => {
-    if (loading) return; // 還在判斷登入狀態,先不要做任何跳轉
+    if (loading) return;
     if (!user) {
       router.push("/login");
       return;
     }
     if (allowedRoles && (!role || !allowedRoles.includes(role))) {
-      router.push("/"); // 登入了但角色不符,導回首頁
+      router.push("/");
     }
   }, [user, role, loading, allowedRoles, router]);
 

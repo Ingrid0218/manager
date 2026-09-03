@@ -36,9 +36,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authResolved, setAuthResolved] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
 
+  // 判斷登入狀態,重點是:一旦發現有登入的使用者,
+  // 「開始讀取角色資料」的 loading 狀態要在同一個回呼裡一起設成 true,
+  // 不能拆到另一個 effect 裡分開處理,不然中間會有一個瞬間的空隙,
+  // 讓 ProtectedRoute 誤判成「已經讀完,而且沒有角色」
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
+      setProfileLoading(!!firebaseUser); // 有使用者 → 接下來要去抓角色,先標記成讀取中
       if (!firebaseUser) {
         setProfile(null);
       }
@@ -50,21 +55,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) return;
 
-    setProfileLoading(true);
     const unsubscribeProfile = onSnapshot(
       doc(db, "users", user.uid),
       { includeMetadataChanges: true },
       (snap) => {
-        // 除錯用,穩定後可以刪掉這行
-        console.log("[AuthContext] 收到快照,fromCache =", snap.metadata.fromCache, "exists =", snap.exists());
-
-        // 如果這筆快照是「純本機快取、還沒真正問過伺服器」而且顯示不存在,
-        // 先不要下定論,等真正跟伺服器確認過的下一筆快照進來再判斷,
-        // 避免把暫時性的空快取誤判成「這個使用者沒有角色資料」
         if (snap.metadata.fromCache && !snap.exists()) {
           return;
         }
-
         if (snap.exists()) {
           setProfile(snap.data() as UserProfile);
         } else {
@@ -87,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signInWithEmailAndPassword(auth, email, password);
   const logout = () => signOut(auth);
 
-  const loading = !authResolved || (!!user && profileLoading);
+  const loading = !authResolved || profileLoading;
 
   const value: AuthContextValue = {
     user,
