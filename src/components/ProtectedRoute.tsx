@@ -9,6 +9,14 @@ interface ProtectedRouteProps {
   allowedRoles?: Role[]; // 不傳代表只要登入就能看,不限角色
 }
 
+// 每個角色「真正該落腳」的首頁,角色不符被擋下來時導去這裡,而不是一律導回 "/"
+// (因為 "/" 是講師履歷頁,是 admin 專屬,staff 被導去那裡一樣會被擋,還會白白送出一次不該送的查詢)
+const roleHomePage: Record<Role, string> = {
+  admin: "/",
+  staff: "/attendance",
+  instructor: "/",
+};
+
 /**
  * 用法:
  * <ProtectedRoute>只要登入就能看</ProtectedRoute>
@@ -25,7 +33,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
       return;
     }
     if (allowedRoles && (!role || !allowedRoles.includes(role))) {
-      router.push("/");
+      router.push(role ? roleHomePage[role] : "/login");
     }
   }, [user, role, loading, allowedRoles, router]);
 

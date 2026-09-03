@@ -28,6 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, doc, updateDoc, query, orderBy } from "firebase/firestore";
 import type { Instructor, Application } from "@/lib/data";
@@ -35,14 +36,17 @@ import type { Instructor, Application } from "@/lib/data";
 type ApplicationWithInstructor = Application & { instructor: Instructor };
 
 export function ResumesPage() {
+  const { role } = useAuth();
   const [applications, setApplications] = React.useState<ApplicationWithInstructor[]>([]);
   const [loadingData, setLoadingData] = React.useState(true);
   const [selectedApp, setSelectedApp] = React.useState<ApplicationWithInstructor | null>(null);
   const [rateInput, setRateInput] = React.useState<number>(0);
   const [saving, setSaving] = React.useState(false);
 
-  // 即時監聽 Firestore,資料一有變動(不管是誰改的)畫面會自動同步,不用手動重新整理
+  // 只有 admin 能讀 applications(裡面有履歷、時薪這些敏感資料),
+  // 其他角色即使一瞬間經過這個頁面,也不該送出這個查詢
   React.useEffect(() => {
+    if (role !== "admin") return;
     const q = query(collection(db, "applications"), orderBy("date", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(
@@ -52,9 +56,8 @@ export function ResumesPage() {
       setLoadingData(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [role]);
 
-  // 每次打開一筆履歷詳細資料,把時薪輸入框預填成目前的值
   React.useEffect(() => {
     if (selectedApp) setRateInput(selectedApp.instructor.hourlyRate);
   }, [selectedApp]);
@@ -85,7 +88,6 @@ export function ResumesPage() {
     }
   };
 
-  // 確認聘用 / 婉拒,同時把設定好的時薪一起寫回去
   async function handleDecision(newStatus: Application["status"]) {
     if (!selectedApp) return;
     setSaving(true);

@@ -8,6 +8,7 @@ import {
   Star,
   DollarSign,
   HeartPulse,
+  ClipboardCheck,
 } from "lucide-react";
 import Image from "next/image";
 import {
@@ -20,16 +21,27 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth, type Role } from "@/contexts/AuthContext";
 
-const navItems = [
-  { href: "/", label: "講師履歷", icon: FileText },
-  { href: "/scheduler", label: "講師排班", icon: CalendarDays },
-  { href: "/feedback", label: "課程評鑑", icon: Star },
-  { href: "/billing", label: "費用結算", icon: DollarSign },
+const navItems: {
+  href: string;
+  label: string;
+  icon: typeof FileText;
+  roles: Role[];
+}[] = [
+  { href: "/", label: "講師履歷", icon: FileText, roles: ["admin"] },
+  { href: "/scheduler", label: "講師排班", icon: CalendarDays, roles: ["admin", "staff"] },
+  { href: "/feedback", label: "課程評鑑", icon: Star, roles: ["admin"] },
+  { href: "/billing", label: "費用結算", icon: DollarSign, roles: ["admin"] },
+  { href: "/attendance", label: "出席確認", icon: ClipboardCheck, roles: ["admin", "staff"] },
 ];
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const { role, name, user } = useAuth();
+
+  // 依角色過濾,staff 不會在側邊欄看到自己沒有權限的項目
+  const visibleItems = navItems.filter((item) => role && item.roles.includes(role));
 
   return (
     <Sidebar>
@@ -43,7 +55,7 @@ export function SidebarNav() {
       </SidebarHeader>
       <SidebarContent className="p-2">
         <SidebarMenu>
-          {navItems.map((item) => (
+          {visibleItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
@@ -62,13 +74,13 @@ export function SidebarNav() {
       <SidebarFooter>
         <div className="flex items-center gap-3 p-2 transition-colors rounded-lg hover:bg-sidebar-accent">
           <Avatar className="w-10 h-10">
-            <AvatarImage src="https://picsum.photos/seed/admin/100/100" alt="Admin" data-ai-hint="person professional"/>
-            <AvatarFallback>AD</AvatarFallback>
+            <AvatarImage src="https://picsum.photos/seed/admin/100/100" alt={name ?? "user"} data-ai-hint="person professional"/>
+            <AvatarFallback>{(name ?? user?.email ?? "U").charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="overflow-hidden">
-            <p className="font-semibold truncate">管理者</p>
+            <p className="font-semibold truncate">{name ?? "使用者"}</p>
             <p className="text-xs text-muted-foreground truncate">
-              admin@christian.puli.com
+              {user?.email}
             </p>
           </div>
         </div>
