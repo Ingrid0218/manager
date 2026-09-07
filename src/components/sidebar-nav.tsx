@@ -9,8 +9,9 @@ import {
   DollarSign,
   HeartPulse,
   ClipboardCheck,
+  Clock,
+  BookOpen,
 } from "lucide-react";
-import Image from "next/image";
 import {
   Sidebar,
   SidebarHeader,
@@ -30,17 +31,20 @@ const navItems: {
   roles: Role[];
 }[] = [
   { href: "/", label: "講師履歷", icon: FileText, roles: ["admin"] },
+  { href: "/course-catalog", label: "課程管理", icon: BookOpen, roles: ["admin"] },
   { href: "/scheduler", label: "講師排班", icon: CalendarDays, roles: ["admin", "staff"] },
   { href: "/feedback", label: "課程評鑑", icon: Star, roles: ["admin"] },
   { href: "/billing", label: "費用結算", icon: DollarSign, roles: ["admin"] },
   { href: "/attendance", label: "出席確認", icon: ClipboardCheck, roles: ["admin", "staff"] },
+  { href: "/my-application", label: "我的申請", icon: FileText, roles: ["instructor"] },
+  { href: "/my-availability", label: "空堂時間", icon: Clock, roles: ["instructor"] },
+  { href: "/my-schedule", label: "我的課表", icon: CalendarDays, roles: ["instructor"] },
 ];
 
 export function SidebarNav() {
   const pathname = usePathname();
   const { role, name, user } = useAuth();
 
-  // 依角色過濾,staff 不會在側邊欄看到自己沒有權限的項目
   const visibleItems = navItems.filter((item) => role && item.roles.includes(role));
 
   return (

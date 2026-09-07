@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
+import { MiniCalendar, getLocationColor } from "@/components/mini-calendar";
 import {
   Select,
   SelectContent,
@@ -41,6 +41,7 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  setDoc,
   query,
   where,
   Timestamp,
@@ -81,7 +82,7 @@ function getStatusBadge(s: ScheduleItem) {
       ? { text: "講師未到", variant: "destructive" as const }
       : { text: "已取消", variant: "destructive" as const };
   }
-  return null; // "scheduled" 不特別標示,維持原本乾淨的樣子
+  return null;
 }
 
 export function SchedulerPage() {
@@ -91,12 +92,12 @@ export function SchedulerPage() {
   const [date, setDate] = React.useState<Date | undefined>(undefined);
   const [instructorFilter, setInstructorFilter] = React.useState<string>("all");
   const [locationFilter, setLocationFilter] = React.useState<string>("all");
-  const [isClient, setIsClient] = React.useState(false);
 
   const [acceptedInstructors, setAcceptedInstructors] = React.useState<AcceptedInstructor[]>([]);
   const [locationsData, setLocationsData] = React.useState<LocationItem[]>([]);
   const [courseCatalog, setCourseCatalog] = React.useState<CourseCatalogItem[]>([]);
   const [schedules, setSchedules] = React.useState<ScheduleItem[]>([]);
+  const [availabilityLocked, setAvailabilityLocked] = React.useState(false);
 
   const [createOpen, setCreateOpen] = React.useState(false);
   const [editingScheduleId, setEditingScheduleId] = React.useState<string | null>(null);
@@ -109,12 +110,11 @@ export function SchedulerPage() {
   const [creating, setCreating] = React.useState(false);
 
   React.useEffect(() => {
-    setIsClient(true);
     setDate(new Date());
   }, []);
 
   React.useEffect(() => {
-    if (!isAdmin) return; // applications 有敏感履歷資料,只有 admin 能讀,staff 不該送這個查詢
+    if (!isAdmin) return;
     const q = query(collection(db, "applications"), where("status", "==", "Accepted"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const list = snapshot.docs.map((d) => {
@@ -169,7 +169,13 @@ export function SchedulerPage() {
     return () => unsubscribe();
   }, []);
 
-  // staff 只看得到自己據點的排班,admin 看全部
+  React.useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, "settings", "general"), (snap) => {
+      setAvailabilityLocked(snap.exists() ? !!snap.data().availabilityLocked : false);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const scopedSchedules = React.useMemo(() => {
     return isAdmin ? schedules : schedules.filter((s) => s.locationId === siteId);
   }, [schedules, isAdmin, siteId]);
@@ -181,8 +187,6 @@ export function SchedulerPage() {
       .filter((s) => locationFilter === "all" || s.locationId === locationFilter);
   }, [scopedSchedules, date, instructorFilter, locationFilter]);
 
-  // 講師篩選下拉選單的來源:admin 用 applications 抓到的完整名單(新增排班的連動篩選也要用);
-  // staff 不能讀 applications,改成直接從自己據點目前有的排班資料裡整理出現過的講師,一樣夠用
   const instructorFilterOptions = React.useMemo(() => {
     if (isAdmin) return acceptedInstructors.map((i) => ({ id: i.id, name: i.name }));
     const seen = new Map<string, string>();
@@ -191,6 +195,20 @@ export function SchedulerPage() {
     });
     return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
   }, [isAdmin, acceptedInstructors, scopedSchedules]);
+
+  // 日曆小底線要用的顏色對照,依據點區分,跟公開頁面共用同一套色盤邏輯
+  const locationIds = React.useMemo(() => locationsData.map((l) => l.id), [locationsData]);
+  const markersByDay = React.useMemo(() => {
+    const map = new Map<string, string[]>();
+    scopedSchedules.forEach((s) => {
+      const key = format(s.startTime, "yyyy-MM-dd");
+      const color = getLocationColor(s.locationId, locationIds);
+      const existing = map.get(key) ?? [];
+      if (!existing.includes(color)) existing.push(color);
+      map.set(key, existing);
+    });
+    return map;
+  }, [scopedSchedules, locationIds]);
 
   const selectedCourse = courseCatalog.find((c) => c.id === newCourseId);
   const eligibleInstructors = selectedCourse
@@ -223,8 +241,6 @@ export function SchedulerPage() {
     setCreateOpen(true);
   }
 
-  // 編輯既有排班:因為排班本身沒有存 courseId,用課程名稱回頭比對課程目錄,
-  // 藉此才能正確帶出「這門課對應的專長分類」,連動篩選講師才會準確
   function openEditDialog(s: ScheduleItem) {
     const matchingCourse = courseCatalog.find((c) => c.title === s.title);
     setEditingScheduleId(s.id);
@@ -259,7 +275,6 @@ export function SchedulerPage() {
     setCreating(true);
     try {
       if (editingScheduleId) {
-        // 用 updateDoc 只更新這幾個欄位,不會動到已經存在的 status、出席人數等資料
         await updateDoc(doc(db, "schedules", editingScheduleId), payload);
       } else {
         await addDoc(collection(db, "schedules"), { ...payload, status: "scheduled" });
@@ -290,15 +305,34 @@ export function SchedulerPage() {
     }
   }
 
+  async function handleToggleLock() {
+    try {
+      await setDoc(doc(db, "settings", "general"), { availabilityLocked: !availabilityLocked }, { merge: true });
+    } catch (err) {
+      console.error("切換鎖定狀態失敗:", err);
+      alert("操作失敗,請再試一次");
+    }
+  }
+
   return (
     <ProtectedRoute allowedRoles={["admin", "staff"]}>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <h1 className="text-3xl font-bold tracking-tight">
             {isAdmin ? "講師排班" : "本據點課程行事曆"}
           </h1>
-          {/* 只有 admin 能新增排班,staff 這個頁面是唯讀查看用 */}
-          {isAdmin && <Button onClick={openCreateDialog}>新增排班</Button>}
+          {isAdmin && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant={availabilityLocked ? "destructive" : "outline"}
+                size="sm"
+                onClick={handleToggleLock}
+              >
+                {availabilityLocked ? "🔒 空堂填寫已鎖定(點擊解鎖)" : "🔓 空堂填寫開放中(點擊鎖定)"}
+              </Button>
+              <Button onClick={openCreateDialog}>新增排班</Button>
+            </div>
+          )}
         </div>
 
         <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
@@ -307,39 +341,8 @@ export function SchedulerPage() {
               <CardTitle>課程行事曆</CardTitle>
               <CardDescription>點擊日期查看當天的課程安排。</CardDescription>
             </CardHeader>
-            <CardContent className="flex justify-center">
-              {isClient && (
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  className="rounded-md"
-                  locale={zhTW}
-                  month={date}
-                  onMonthChange={(newMonth) => {
-                    const today = new Date();
-                    if (
-                      newMonth.getMonth() !== today.getMonth() ||
-                      newMonth.getFullYear() !== today.getFullYear()
-                    ) {
-                      const newDate = new Date(newMonth);
-                      newDate.setDate(1);
-                      setDate(newDate);
-                    } else {
-                      setDate(today);
-                    }
-                  }}
-                  modifiers={{
-                    events: scopedSchedules.map((s) => s.startTime),
-                  }}
-                  modifiersStyles={{
-                    events: {
-                      color: "hsl(var(--primary-foreground))",
-                      backgroundColor: "hsl(var(--primary))",
-                    },
-                  }}
-                />
-              )}
+            <CardContent>
+              <MiniCalendar selectedDate={date} onSelectDate={setDate} markersByDay={markersByDay} />
             </CardContent>
           </Card>
           <Card>
@@ -364,7 +367,6 @@ export function SchedulerPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                {/* staff 只有一個據點,篩選據點對他們沒有意義,只給 admin 看 */}
                 {isAdmin && (
                   <Select value={locationFilter} onValueChange={setLocationFilter}>
                     <SelectTrigger>

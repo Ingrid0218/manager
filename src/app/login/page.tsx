@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
@@ -12,13 +13,13 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setSubmitting(true);
     try {
       await login(email, password);
-      router.push("/"); // 登入成功先導回首頁,之後可以依角色導向不同起始頁
+      router.push("/"); // 登入成功先導回首頁,ProtectedRoute 會依角色再導去正確的地方
     } catch (err) {
       setError("帳號或密碼錯誤,請再確認一次");
     } finally {
@@ -73,6 +74,13 @@ export default function LoginPage() {
             {submitting ? "登入中..." : "登入"}
           </button>
         </form>
+
+        <p className="text-xs text-gray-400 text-center mt-4">
+          是講師想應徵課程嗎?{" "}
+          <Link href="/register" className="text-amber-600 hover:underline">
+            點此註冊
+          </Link>
+        </p>
       </div>
     </div>
   );

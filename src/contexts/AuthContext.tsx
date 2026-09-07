@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut,
   User,
 } from "firebase/auth";
@@ -25,6 +26,7 @@ interface AuthContextValue {
   name: string | null;
   loading: boolean;
   login: (email: string, password: string) => ReturnType<typeof signInWithEmailAndPassword>;
+  register: (email: string, password: string) => ReturnType<typeof createUserWithEmailAndPassword>;
   logout: () => ReturnType<typeof signOut>;
 }
 
@@ -36,14 +38,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authResolved, setAuthResolved] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
 
-  // 判斷登入狀態,重點是:一旦發現有登入的使用者,
-  // 「開始讀取角色資料」的 loading 狀態要在同一個回呼裡一起設成 true,
-  // 不能拆到另一個 effect 裡分開處理,不然中間會有一個瞬間的空隙,
-  // 讓 ProtectedRoute 誤判成「已經讀完,而且沒有角色」
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
-      setProfileLoading(!!firebaseUser); // 有使用者 → 接下來要去抓角色,先標記成讀取中
+      setProfileLoading(!!firebaseUser);
       if (!firebaseUser) {
         setProfile(null);
       }
@@ -82,6 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = (email: string, password: string) =>
     signInWithEmailAndPassword(auth, email, password);
+  const register = (email: string, password: string) =>
+    createUserWithEmailAndPassword(auth, email, password);
   const logout = () => signOut(auth);
 
   const loading = !authResolved || profileLoading;
@@ -93,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     name: profile?.name ?? null,
     loading,
     login,
+    register,
     logout,
   };
 
