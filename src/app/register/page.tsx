@@ -24,6 +24,8 @@ export default function RegisterPage() {
   const { register } = useAuth();
   const router = useRouter();
 
+  const [accountType, setAccountType] = React.useState<"instructor" | "family">("instructor");
+
   const [courseCatalog, setCourseCatalog] = React.useState<CourseCatalogItem[]>([]);
   const [locationsData, setLocationsData] = React.useState<LocationItem[]>([]);
 
@@ -42,7 +44,6 @@ export default function RegisterPage() {
   const [error, setError] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
 
-  // 課程分類跟據點清單是公開可讀的,不用登入就能拿來填表單
   React.useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "courses"), (snapshot) => {
       setCourseCatalog(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as CourseCatalogItem)));
@@ -57,27 +58,19 @@ export default function RegisterPage() {
     return () => unsubscribe();
   }, []);
 
-  // 專長選項用課程分類去重複取得,確保跟排班頁的比對邏輯用同一套字串,不會對不起來
   const specialtyOptions = React.useMemo(() => {
     return Array.from(new Set(courseCatalog.map((c) => c.category)));
   }, [courseCatalog]);
 
   function toggleSpecialty(value: string) {
-    setSpecialties((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
-    );
+    setSpecialties((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
   }
 
   function toggleTeachingArea(value: string) {
-    setTeachingArea((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
-    );
+    setTeachingArea((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-
+  async function handleSubmitInstructor() {
     if (!email || !password || !name || !phone || !age || !bankAccount) {
       setError("請完整填寫所有必填欄位");
       return;
@@ -91,43 +84,70 @@ export default function RegisterPage() {
       return;
     }
 
+    const cred = await register(email, password);
+    const uid = cred.user.uid;
+
+    await setDoc(doc(db, "users", uid), {
+      name,
+      email,
+      role: "instructor",
+      site_id: null,
+    });
+
+    await setDoc(doc(db, "applications", uid), {
+      instructorId: uid,
+      date: new Date().toISOString().slice(0, 10),
+      status: "Pending",
+      instructor: {
+        id: uid,
+        name,
+        avatarUrl: `https://picsum.photos/seed/${uid}/100/100`,
+        email,
+        phone,
+        specialties,
+        bio,
+        hourlyRate: 0,
+        gender,
+        age: Number(age),
+        bankAccount,
+        teachingArea,
+        teachingHistory: teachingHistory.split("\n").map((s) => s.trim()).filter(Boolean),
+        level: "",
+      },
+    });
+
+    router.push("/my-application");
+  }
+
+  async function handleSubmitFamily() {
+    if (!email || !password || !name || !phone) {
+      setError("請完整填寫所有必填欄位");
+      return;
+    }
+
+    const cred = await register(email, password);
+    const uid = cred.user.uid;
+
+    await setDoc(doc(db, "users", uid), {
+      name,
+      email,
+      role: "family",
+      site_id: null,
+    });
+
+    router.push("/my-elders");
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
     setSubmitting(true);
     try {
-      const cred = await register(email, password);
-      const uid = cred.user.uid;
-
-      // 建立帳號角色資料,role 固定是 instructor,不能改成其他角色
-      await setDoc(doc(db, "users", uid), {
-        name,
-        email,
-        role: "instructor",
-        site_id: null,
-      });
-
-      // 建立履歷申請,狀態固定從 Pending 開始,時薪固定是 0,由 admin 審核通過後才會設定
-      await setDoc(doc(db, "applications", uid), {
-        instructorId: uid,
-        date: new Date().toISOString().slice(0, 10),
-        status: "Pending",
-        instructor: {
-          id: uid,
-          name,
-          avatarUrl: `https://picsum.photos/seed/${uid}/100/100`,
-          email,
-          phone,
-          specialties,
-          bio,
-          hourlyRate: 0,
-          gender,
-          age: Number(age),
-          bankAccount,
-          teachingArea,
-          teachingHistory: teachingHistory.split("\n").map((s) => s.trim()).filter(Boolean),
-          level: "",
-        },
-      });
-
-      router.push("/my-application");
+      if (accountType === "instructor") {
+        await handleSubmitInstructor();
+      } else {
+        await handleSubmitFamily();
+      }
     } catch (err: any) {
       console.error("註冊失敗:", err);
       if (err?.code === "auth/email-already-in-use") {
@@ -147,10 +167,28 @@ export default function RegisterPage() {
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
         <div className="mb-6">
           <p className="text-sm font-bold text-gray-900">Puli Christian Hospital</p>
-          <h1 className="text-xl font-bold text-gray-900 mt-1">講師應徵註冊</h1>
-          <p className="text-xs text-gray-400 mt-1">
-            填寫以下資料建立帳號並送出履歷,審核結果會顯示在您登入後的頁面。
-          </p>
+          <h1 className="text-xl font-bold text-gray-900 mt-1">帳號註冊</h1>
+        </div>
+
+        <div className="flex rounded-lg border border-gray-200 p-1 mb-6">
+          <button
+            type="button"
+            onClick={() => setAccountType("instructor")}
+            className={`flex-1 text-sm py-2 rounded-md transition ${
+              accountType === "instructor" ? "bg-amber-400 text-white font-medium" : "text-gray-500"
+            }`}
+          >
+            我要應徵講師
+          </button>
+          <button
+            type="button"
+            onClick={() => setAccountType("family")}
+            className={`flex-1 text-sm py-2 rounded-md transition ${
+              accountType === "family" ? "bg-amber-400 text-white font-medium" : "text-gray-500"
+            }`}
+          >
+            我是長者家屬
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -163,95 +201,108 @@ export default function RegisterPage() {
               <label className="text-sm font-medium mb-1 block">密碼 *</label>
               <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="至少 6 個字元" />
             </div>
-            <div>
+            <div className={accountType === "family" ? "col-span-2" : ""}>
               <label className="text-sm font-medium mb-1 block">姓名 *</label>
               <Input value={name} onChange={(e) => setName(e.target.value)} />
             </div>
-            <div>
+            <div className={accountType === "family" ? "col-span-2" : ""}>
               <label className="text-sm font-medium mb-1 block">電話 *</label>
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">性別</label>
-              <Select value={gender} onValueChange={(v) => setGender(v as typeof gender)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="男性">男性</SelectItem>
-                  <SelectItem value="女性">女性</SelectItem>
-                  <SelectItem value="其他">其他</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">年齡 *</label>
-              <Input type="number" value={age} onChange={(e) => setAge(e.target.value)} />
-            </div>
-            <div className="col-span-2">
-              <label className="text-sm font-medium mb-1 block">金融帳號 *</label>
-              <Input value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} placeholder="供之後撥款用" />
-            </div>
           </div>
 
-          <div>
-            <label className="text-sm font-medium mb-1 block">專長 *(可複選)</label>
-            <div className="grid grid-cols-2 gap-2 border rounded-lg p-3">
-              {specialtyOptions.length === 0 ? (
-                <p className="text-sm text-muted-foreground col-span-2">課程分類載入中...</p>
-              ) : (
-                specialtyOptions.map((s) => (
-                  <label key={s} className="flex items-center gap-2 text-sm">
-                    <Checkbox checked={specialties.includes(s)} onCheckedChange={() => toggleSpecialty(s)} />
-                    {s}
+          {accountType === "instructor" && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">性別</label>
+                  <Select value={gender} onValueChange={(v) => setGender(v as typeof gender)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="男性">男性</SelectItem>
+                      <SelectItem value="女性">女性</SelectItem>
+                      <SelectItem value="其他">其他</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">年齡 *</label>
+                  <Input type="number" value={age} onChange={(e) => setAge(e.target.value)} />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-sm font-medium mb-1 block">金融帳號 *</label>
+                  <Input value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} placeholder="供之後撥款用" />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-1 block">專長 *(可複選)</label>
+                <div className="grid grid-cols-2 gap-2 border rounded-lg p-3">
+                  {specialtyOptions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground col-span-2">課程分類載入中...</p>
+                  ) : (
+                    specialtyOptions.map((s) => (
+                      <label key={s} className="flex items-center gap-2 text-sm">
+                        <Checkbox checked={specialties.includes(s)} onCheckedChange={() => toggleSpecialty(s)} />
+                        {s}
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-1 block">可授課地點 *(可複選)</label>
+                <div className="grid grid-cols-2 gap-2 border rounded-lg p-3">
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={teachingArea.includes("所有據點")}
+                      onCheckedChange={() => toggleTeachingArea("所有據點")}
+                    />
+                    所有據點
                   </label>
-                ))
-              )}
-            </div>
-          </div>
+                  {locationsData.map((l) => (
+                    <label key={l.id} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={teachingArea.includes(l.name)}
+                        onCheckedChange={() => toggleTeachingArea(l.name)}
+                        disabled={teachingArea.includes("所有據點")}
+                      />
+                      {l.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
 
-          <div>
-            <label className="text-sm font-medium mb-1 block">可授課地點 *(可複選)</label>
-            <div className="grid grid-cols-2 gap-2 border rounded-lg p-3">
-              <label className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={teachingArea.includes("所有據點")}
-                  onCheckedChange={() => toggleTeachingArea("所有據點")}
+              <div>
+                <label className="text-sm font-medium mb-1 block">教學歷程</label>
+                <Textarea
+                  value={teachingHistory}
+                  onChange={(e) => setTeachingHistory(e.target.value)}
+                  placeholder="每行填寫一項經歷,例如:2020-現在: 埔里基督教醫院"
+                  rows={3}
                 />
-                所有據點
-              </label>
-              {locationsData.map((l) => (
-                <label key={l.id} className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={teachingArea.includes(l.name)}
-                    onCheckedChange={() => toggleTeachingArea(l.name)}
-                    disabled={teachingArea.includes("所有據點")}
-                  />
-                  {l.name}
-                </label>
-              ))}
-            </div>
-          </div>
+              </div>
 
-          <div>
-            <label className="text-sm font-medium mb-1 block">教學歷程</label>
-            <Textarea
-              value={teachingHistory}
-              onChange={(e) => setTeachingHistory(e.target.value)}
-              placeholder="每行填寫一項經歷,例如:2020-現在: 埔里基督教醫院"
-              rows={3}
-            />
-          </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">自我介紹</label>
+                <Textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} />
+              </div>
+            </>
+          )}
 
-          <div>
-            <label className="text-sm font-medium mb-1 block">自我介紹</label>
-            <Textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} />
-          </div>
+          {accountType === "family" && (
+            <p className="text-xs text-gray-400 bg-gray-50 rounded-lg p-3">
+              註冊完成後,可以在「我的長者」頁面新增家中長輩的資料,之後就能在課程行事曆頁面幫他們報名課程。
+            </p>
+          )}
 
           {error && <p className="text-sm text-red-500">{error}</p>}
 
           <Button type="submit" disabled={submitting} className="w-full">
-            {submitting ? "送出中..." : "送出應徵申請"}
+            {submitting ? "送出中..." : accountType === "instructor" ? "送出應徵申請" : "完成註冊"}
           </Button>
         </form>
       </div>

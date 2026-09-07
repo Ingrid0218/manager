@@ -37,6 +37,8 @@ type ScheduleItem = {
   cancelReason?: "instructor_absent" | "other";
 };
 
+type EnrollmentItem = { scheduleId: string; elderName: string; status: string };
+
 function getStatusLabel(s: ScheduleItem) {
   if (s.status === "scheduled") return "待確認";
   if (s.status === "completed") return "已完成";
@@ -49,12 +51,12 @@ function getStatusLabel(s: ScheduleItem) {
 export function AttendancePage() {
   const { role, siteId, user } = useAuth();
   const [schedules, setSchedules] = React.useState<ScheduleItem[]>([]);
+  const [enrollments, setEnrollments] = React.useState<EnrollmentItem[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [statusFilter, setStatusFilter] = React.useState<string>("scheduled");
   const [attendeeInputs, setAttendeeInputs] = React.useState<Record<string, string>>({});
   const [savingId, setSavingId] = React.useState<string | null>(null);
 
-  // 只有 staff 能實際操作出席確認,admin 這裡是唯讀,用來掌握全據點狀況
   const canOperate = role === "staff";
 
   React.useEffect(() => {
@@ -80,12 +82,31 @@ export function AttendancePage() {
     return () => unsubscribe();
   }, []);
 
+  // 抓報名資料,用來顯示每堂課的報名名單
+  React.useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "enrollments"), (snapshot) => {
+      const list = snapshot.docs
+        .map((d) => ({
+          scheduleId: d.data().scheduleId,
+          elderName: d.data().elderName,
+          status: d.data().status,
+        }))
+        .filter((e) => e.status === "enrolled");
+      setEnrollments(list);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const scopedSchedules = React.useMemo(() => {
     const base = role === "admin" ? schedules : schedules.filter((s) => s.locationId === siteId);
     return [...base]
       .filter((s) => statusFilter === "all" || s.status === statusFilter)
       .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
   }, [schedules, role, siteId, statusFilter]);
+
+  function enrolledNamesFor(scheduleId: string) {
+    return enrollments.filter((e) => e.scheduleId === scheduleId).map((e) => e.elderName);
+  }
 
   async function handleConfirm(scheduleId: string) {
     const countStr = attendeeInputs[scheduleId];
@@ -157,69 +178,80 @@ export function AttendancePage() {
               <p className="text-sm text-muted-foreground py-8 text-center">目前沒有符合的課程</p>
             ) : (
               <div className="space-y-3">
-                {scopedSchedules.map((s) => (
-                  <div key={s.id} className="p-4 border rounded-lg space-y-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-semibold">{s.title}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {format(s.startTime, "yyyy/MM/dd HH:mm")} - {format(s.endTime, "HH:mm")}
-                        </p>
+                {scopedSchedules.map((s) => {
+                  const enrolledNames = enrolledNamesFor(s.id);
+                  return (
+                    <div key={s.id} className="p-4 border rounded-lg space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-semibold">{s.title}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {format(s.startTime, "yyyy/MM/dd HH:mm")} - {format(s.endTime, "HH:mm")}
+                          </p>
+                        </div>
+                        <Badge
+                          variant={
+                            s.status === "completed"
+                              ? "default"
+                              : s.status === "cancelled"
+                              ? "destructive"
+                              : "secondary"
+                          }
+                        >
+                          {getStatusLabel(s)}
+                        </Badge>
                       </div>
-                      <Badge
-                        variant={
-                          s.status === "completed"
-                            ? "default"
-                            : s.status === "cancelled"
-                            ? "destructive"
-                            : "secondary"
-                        }
-                      >
-                        {getStatusLabel(s)}
-                      </Badge>
-                    </div>
-                    <div className="flex gap-2 flex-wrap text-sm">
-                      <Badge variant="outline">{s.instructorName}</Badge>
-                      {role === "admin" && <Badge variant="outline">{s.locationName}</Badge>}
-                      {s.attendeeCount !== undefined && (
-                        <Badge variant="outline">到場 {s.attendeeCount} 人</Badge>
+                      <div className="flex gap-2 flex-wrap text-sm">
+                        <Badge variant="outline">{s.instructorName}</Badge>
+                        {role === "admin" && <Badge variant="outline">{s.locationName}</Badge>}
+                        {s.attendeeCount !== undefined && (
+                          <Badge variant="outline">到場 {s.attendeeCount} 人</Badge>
+                        )}
+                      </div>
+
+                      {/* 報名名單,不管 admin 或 staff 都看得到,方便掌握這堂課有哪些長者要來 */}
+                      <div className="text-sm bg-muted/50 rounded-lg p-2">
+                        <span className="text-muted-foreground">
+                          報名 {enrolledNames.length} 位
+                          {enrolledNames.length > 0 && `:${enrolledNames.join("、")}`}
+                        </span>
+                      </div>
+
+                      {canOperate && s.status === "scheduled" && (
+                        <div className="flex items-center gap-2 pt-2 border-t mt-2 flex-wrap">
+                          <Input
+                            type="number"
+                            placeholder="到場人數"
+                            className="w-28"
+                            value={attendeeInputs[s.id] ?? ""}
+                            onChange={(e) =>
+                              setAttendeeInputs((prev) => ({ ...prev, [s.id]: e.target.value }))
+                            }
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={savingId === s.id}
+                            onClick={() => handleCancel(s.id, "instructor_absent")}
+                          >
+                            講師未到
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={savingId === s.id}
+                            onClick={() => handleCancel(s.id, "other")}
+                          >
+                            取消課程
+                          </Button>
+                          <Button size="sm" disabled={savingId === s.id} onClick={() => handleConfirm(s.id)}>
+                            確認出席
+                          </Button>
+                        </div>
                       )}
                     </div>
-
-                    {canOperate && s.status === "scheduled" && (
-                      <div className="flex items-center gap-2 pt-2 border-t mt-2 flex-wrap">
-                        <Input
-                          type="number"
-                          placeholder="到場人數"
-                          className="w-28"
-                          value={attendeeInputs[s.id] ?? ""}
-                          onChange={(e) =>
-                            setAttendeeInputs((prev) => ({ ...prev, [s.id]: e.target.value }))
-                          }
-                        />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={savingId === s.id}
-                          onClick={() => handleCancel(s.id, "instructor_absent")}
-                        >
-                          講師未到
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={savingId === s.id}
-                          onClick={() => handleCancel(s.id, "other")}
-                        >
-                          取消課程
-                        </Button>
-                        <Button size="sm" disabled={savingId === s.id} onClick={() => handleConfirm(s.id)}>
-                          確認出席
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>

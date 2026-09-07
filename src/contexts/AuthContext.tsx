@@ -11,7 +11,7 @@ import {
 import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
-export type Role = "admin" | "staff" | "instructor";
+export type Role = "admin" | "staff" | "instructor" | "family";
 
 interface UserProfile {
   name?: string;

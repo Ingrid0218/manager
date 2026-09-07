@@ -23,6 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -66,6 +67,7 @@ type ScheduleItem = {
   endTime: Date;
   status: "scheduled" | "completed" | "cancelled";
   cancelReason?: "instructor_absent" | "other";
+  note?: string;
 };
 
 function combineDateAndTime(date: Date, timeStr: string): Date {
@@ -107,6 +109,7 @@ export function SchedulerPage() {
   const [newDateStr, setNewDateStr] = React.useState("");
   const [newStartTime, setNewStartTime] = React.useState("10:00");
   const [newEndTime, setNewEndTime] = React.useState("11:00");
+  const [newNote, setNewNote] = React.useState("");
   const [creating, setCreating] = React.useState(false);
 
   React.useEffect(() => {
@@ -162,6 +165,7 @@ export function SchedulerPage() {
           endTime: (data.endTime as Timestamp).toDate(),
           status: data.status,
           cancelReason: data.cancelReason,
+          note: data.note,
         } as ScheduleItem;
       });
       setSchedules(list);
@@ -196,7 +200,6 @@ export function SchedulerPage() {
     return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
   }, [isAdmin, acceptedInstructors, scopedSchedules]);
 
-  // 日曆小底線要用的顏色對照,依據點區分,跟公開頁面共用同一套色盤邏輯
   const locationIds = React.useMemo(() => locationsData.map((l) => l.id), [locationsData]);
   const markersByDay = React.useMemo(() => {
     const map = new Map<string, string[]>();
@@ -238,6 +241,7 @@ export function SchedulerPage() {
     setNewDateStr(date ? format(date, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"));
     setNewStartTime("10:00");
     setNewEndTime("11:00");
+    setNewNote("");
     setCreateOpen(true);
   }
 
@@ -250,6 +254,7 @@ export function SchedulerPage() {
     setNewDateStr(format(s.startTime, "yyyy-MM-dd"));
     setNewStartTime(format(s.startTime, "HH:mm"));
     setNewEndTime(format(s.endTime, "HH:mm"));
+    setNewNote(s.note ?? "");
     setCreateOpen(true);
   }
 
@@ -270,6 +275,7 @@ export function SchedulerPage() {
       locationName: location.name,
       startTime: Timestamp.fromDate(combineDateAndTime(baseDate, newStartTime)),
       endTime: Timestamp.fromDate(combineDateAndTime(baseDate, newEndTime)),
+      note: newNote,
     };
 
     setCreating(true);
@@ -402,7 +408,7 @@ export function SchedulerPage() {
                                 s.status === "cancelled" ? "line-through" : ""
                               }`}
                             >
-                              {s.title}
+                              {s.title} {s.note && <span title="有攜帶事項">🎒</span>}
                             </h4>
                             {statusBadge && (
                               <Badge variant={statusBadge.variant} className="shrink-0">
@@ -532,6 +538,16 @@ export function SchedulerPage() {
                   <label className="text-sm font-medium mb-1 block">結束時間</label>
                   <Input type="time" value={newEndTime} onChange={(e) => setNewEndTime(e.target.value)} />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-1 block">攜帶事項(選填,會顯示在長者的課程提醒頁)</label>
+                <Textarea
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  placeholder="例如:請攜帶水壺、穿著舒適好活動的衣服"
+                  rows={2}
+                />
               </div>
             </div>
             <DialogFooter className="flex-row justify-between sm:justify-between">

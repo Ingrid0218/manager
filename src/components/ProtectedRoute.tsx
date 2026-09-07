@@ -9,11 +9,11 @@ interface ProtectedRouteProps {
   allowedRoles?: Role[];
 }
 
-// 每個角色「真正該落腳」的首頁,角色不符被擋下來時導去這裡
 const roleHomePage: Record<Role, string> = {
   admin: "/",
   staff: "/attendance",
   instructor: "/my-application",
+  family: "/my-elders",
 };
 
 export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {

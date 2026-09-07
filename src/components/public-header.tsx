@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 const publicNavItems = [
   { href: "/courses", label: "課程簡介" },
@@ -11,6 +12,13 @@ const publicNavItems = [
 
 export function PublicHeader() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, role, name, logout } = useAuth();
+
+  async function handleLogout() {
+    await logout();
+    router.push("/");
+  }
 
   return (
     <header className="bg-white border-b border-gray-100">
@@ -35,12 +43,40 @@ export function PublicHeader() {
               {item.label}
             </Link>
           ))}
-          <Link
-            href="/login"
-            className="ml-2 px-3 py-1.5 rounded-lg text-gray-400 hover:bg-gray-50 text-xs"
-          >
-            使用者登入
-          </Link>
+
+          {role === "family" ? (
+            <>
+              <Link
+                href="/my-elders"
+                className={`px-3 py-1.5 rounded-lg transition ${
+                  pathname === "/my-elders"
+                    ? "bg-amber-100 text-amber-800 font-medium"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                我的長者
+              </Link>
+              <span className="ml-2 text-xs text-gray-400 hidden sm:inline">{name}</span>
+              <button
+                onClick={handleLogout}
+                className="px-3 py-1.5 rounded-lg text-gray-400 hover:bg-gray-50 text-xs"
+              >
+                登出
+              </button>
+            </>
+          ) : user ? (
+            // 其他角色(admin/staff/instructor)剛好逛到公開頁面時,給個回自己後台的路,不強迫登出
+            <Link href="/" className="ml-2 px-3 py-1.5 rounded-lg text-gray-400 hover:bg-gray-50 text-xs">
+              前往後台
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="ml-2 px-3 py-1.5 rounded-lg text-gray-400 hover:bg-gray-50 text-xs"
+            >
+              使用者登入
+            </Link>
+          )}
         </nav>
       </div>
     </header>
