@@ -171,6 +171,7 @@ export default function CourseCalendarPage() {
           elderId: elder.id,
           elderName: elder.name,
           familyUid: user.uid,
+          courseTitle: schedule.title,
           status: "enrolled",
           enrolledAt: Timestamp.now(),
         });

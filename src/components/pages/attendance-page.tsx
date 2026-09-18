@@ -35,9 +35,23 @@ type ScheduleItem = {
   status: "scheduled" | "completed" | "cancelled";
   attendeeCount?: number;
   cancelReason?: "instructor_absent" | "other";
+  instructorReport?: string;
+  improvementNote?: string;
 };
 
-type EnrollmentItem = { scheduleId: string; elderName: string; status: string };
+type EnrollmentItem = {
+  id: string;
+  scheduleId: string;
+  elderName: string;
+  status: string;
+  reaction?: "happy" | "neutral" | "sad";
+};
+
+const REACTIONS: { key: "happy" | "neutral" | "sad"; emoji: string }[] = [
+  { key: "happy", emoji: "😊" },
+  { key: "neutral", emoji: "😐" },
+  { key: "sad", emoji: "😞" },
+];
 
 function getStatusLabel(s: ScheduleItem) {
   if (s.status === "scheduled") return "待確認";
@@ -74,6 +88,8 @@ export function AttendancePage() {
           status: data.status,
           attendeeCount: data.attendeeCount,
           cancelReason: data.cancelReason,
+          instructorReport: data.instructorReport,
+          improvementNote: data.improvementNote,
         } as ScheduleItem;
       });
       setSchedules(list);
@@ -82,14 +98,15 @@ export function AttendancePage() {
     return () => unsubscribe();
   }, []);
 
-  // 抓報名資料,用來顯示每堂課的報名名單
   React.useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "enrollments"), (snapshot) => {
       const list = snapshot.docs
         .map((d) => ({
+          id: d.id,
           scheduleId: d.data().scheduleId,
           elderName: d.data().elderName,
           status: d.data().status,
+          reaction: d.data().reaction,
         }))
         .filter((e) => e.status === "enrolled");
       setEnrollments(list);
@@ -104,8 +121,20 @@ export function AttendancePage() {
       .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
   }, [schedules, role, siteId, statusFilter]);
 
-  function enrolledNamesFor(scheduleId: string) {
-    return enrollments.filter((e) => e.scheduleId === scheduleId).map((e) => e.elderName);
+  function enrollmentsFor(scheduleId: string) {
+    return enrollments.filter((e) => e.scheduleId === scheduleId);
+  }
+
+  async function handleSetReaction(enrollmentId: string, reaction: "happy" | "neutral" | "sad") {
+    try {
+      await updateDoc(doc(db, "enrollments", enrollmentId), {
+        reaction,
+        reactionRecordedAt: Timestamp.now(),
+      });
+    } catch (err) {
+      console.error("記錄反應失敗:", err);
+      alert("操作失敗,請再試一次");
+    }
   }
 
   async function handleConfirm(scheduleId: string) {
@@ -167,8 +196,8 @@ export function AttendancePage() {
             <CardTitle>{role === "admin" ? "所有據點課程(唯讀)" : "本據點課程"}</CardTitle>
             <CardDescription>
               {role === "admin"
-                ? "掌握全據點的出席確認狀況,實際確認由各據點承辦人操作。"
-                : "確認講師是否實際到場授課,並記錄本次到場學員人數。"}
+                ? "掌握全據點的出席確認狀況與講師課後回報,實際確認由各據點承辦人操作。"
+                : "確認講師是否實際到場授課,並記錄本次到場學員人數。下課後可以順口問問長者今天上課感覺如何,幫忙點選反應。"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -179,7 +208,7 @@ export function AttendancePage() {
             ) : (
               <div className="space-y-3">
                 {scopedSchedules.map((s) => {
-                  const enrolledNames = enrolledNamesFor(s.id);
+                  const scheduleEnrollments = enrollmentsFor(s.id);
                   return (
                     <div key={s.id} className="p-4 border rounded-lg space-y-2">
                       <div className="flex justify-between items-start">
@@ -209,13 +238,51 @@ export function AttendancePage() {
                         )}
                       </div>
 
-                      {/* 報名名單,不管 admin 或 staff 都看得到,方便掌握這堂課有哪些長者要來 */}
-                      <div className="text-sm bg-muted/50 rounded-lg p-2">
-                        <span className="text-muted-foreground">
-                          報名 {enrolledNames.length} 位
-                          {enrolledNames.length > 0 && `:${enrolledNames.join("、")}`}
-                        </span>
-                      </div>
+                      {scheduleEnrollments.length > 0 && (
+                        <div className="text-sm bg-muted/50 rounded-lg p-2 space-y-1.5">
+                          <p className="text-muted-foreground text-xs">
+                            報名 {scheduleEnrollments.length} 位
+                            {canOperate && "(可幫忙記錄長者當下的反應)"}
+                          </p>
+                          {scheduleEnrollments.map((e) => (
+                            <div key={e.id} className="flex items-center justify-between">
+                              <span>{e.elderName}</span>
+                              <div className="flex gap-1.5">
+                                {REACTIONS.map((r) => (
+                                  <button
+                                    key={r.key}
+                                    type="button"
+                                    disabled={!canOperate}
+                                    onClick={() => handleSetReaction(e.id, r.key)}
+                                    className={`text-lg transition ${
+                                      e.reaction === r.key ? "opacity-100 scale-125" : "opacity-30"
+                                    } ${canOperate ? "cursor-pointer hover:opacity-70" : "cursor-default"}`}
+                                  >
+                                    {r.emoji}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {(s.instructorReport || s.improvementNote) && (
+                        <div className="text-sm space-y-1.5 border-t pt-2">
+                          {s.instructorReport && (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-0.5">講師回報:上課內容與長者狀況</p>
+                              <p className="bg-amber-50 border border-amber-100 rounded-lg p-2">{s.instructorReport}</p>
+                            </div>
+                          )}
+                          {s.improvementNote && (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-0.5">講師回報:課程改進建議</p>
+                              <p className="bg-amber-50 border border-amber-100 rounded-lg p-2">{s.improvementNote}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {canOperate && s.status === "scheduled" && (
                         <div className="flex items-center gap-2 pt-2 border-t mt-2 flex-wrap">

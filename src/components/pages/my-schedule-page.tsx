@@ -42,8 +42,11 @@ type ScheduleItem = {
   status: "scheduled" | "completed" | "cancelled";
   cancelReason?: "instructor_absent" | "other";
   instructorReport?: string;
+  improvementNote?: string;
   instructorReportedAt?: Date;
 };
+
+type EnrollmentItem = { scheduleId: string; elderName: string; status: string };
 
 function getStatusBadge(s: ScheduleItem) {
   if (s.status === "completed") return { text: "已完成", variant: "default" as const };
@@ -58,11 +61,13 @@ function getStatusBadge(s: ScheduleItem) {
 export function MySchedulePage() {
   const { user } = useAuth();
   const [schedules, setSchedules] = React.useState<ScheduleItem[]>([]);
+  const [enrollments, setEnrollments] = React.useState<EnrollmentItem[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [filter, setFilter] = React.useState<string>("upcoming");
 
   const [reportingSchedule, setReportingSchedule] = React.useState<ScheduleItem | null>(null);
   const [reportText, setReportText] = React.useState("");
+  const [improvementText, setImprovementText] = React.useState("");
   const [submittingReport, setSubmittingReport] = React.useState(false);
 
   React.useEffect(() => {
@@ -80,6 +85,7 @@ export function MySchedulePage() {
             status: data.status,
             cancelReason: data.cancelReason,
             instructorReport: data.instructorReport,
+            improvementNote: data.improvementNote,
             instructorReportedAt: data.instructorReportedAt
               ? (data.instructorReportedAt as Timestamp).toDate()
               : undefined,
@@ -91,6 +97,21 @@ export function MySchedulePage() {
     });
     return () => unsubscribe();
   }, [user]);
+
+  // 報名名單,方便講師填寫回報時能直接參考正確的長者姓名
+  React.useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "enrollments"), (snapshot) => {
+      const list = snapshot.docs
+        .map((d) => ({
+          scheduleId: d.data().scheduleId,
+          elderName: d.data().elderName,
+          status: d.data().status,
+        }))
+        .filter((e) => e.status === "enrolled");
+      setEnrollments(list);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const filteredSchedules = React.useMemo(() => {
     const now = new Date();
@@ -105,9 +126,14 @@ export function MySchedulePage() {
       );
   }, [schedules, filter]);
 
+  function enrolledNamesFor(scheduleId: string) {
+    return enrollments.filter((e) => e.scheduleId === scheduleId).map((e) => e.elderName);
+  }
+
   function openReportDialog(s: ScheduleItem) {
     setReportingSchedule(s);
     setReportText(s.instructorReport ?? "");
+    setImprovementText(s.improvementNote ?? "");
   }
 
   async function handleSubmitReport() {
@@ -116,6 +142,7 @@ export function MySchedulePage() {
     try {
       await updateDoc(doc(db, "schedules", reportingSchedule.id), {
         instructorReport: reportText,
+        improvementNote: improvementText,
         instructorReportedAt: Timestamp.now(),
       });
       setReportingSchedule(null);
@@ -163,6 +190,7 @@ export function MySchedulePage() {
                 {filteredSchedules.map((s) => {
                   const badge = getStatusBadge(s);
                   const isPast = s.startTime < now;
+                  const hasReport = s.instructorReport || s.improvementNote;
                   return (
                     <div key={s.id} className="p-4 border rounded-lg space-y-2">
                       <div className="flex justify-between items-start">
@@ -178,14 +206,25 @@ export function MySchedulePage() {
 
                       {isPast && (
                         <div className="pt-2 border-t mt-2">
-                          {s.instructorReport ? (
-                            <div className="space-y-1">
+                          {hasReport ? (
+                            <div className="space-y-2">
                               <p className="text-xs text-muted-foreground">
                                 簽退時間:
                                 {s.instructorReportedAt &&
                                   format(s.instructorReportedAt, "yyyy/MM/dd HH:mm")}
                               </p>
-                              <p className="text-sm bg-muted p-2 rounded">{s.instructorReport}</p>
+                              {s.instructorReport && (
+                                <div>
+                                  <p className="text-xs text-muted-foreground mb-0.5">上課內容與長者狀況</p>
+                                  <p className="text-sm bg-muted p-2 rounded">{s.instructorReport}</p>
+                                </div>
+                              )}
+                              {s.improvementNote && (
+                                <div>
+                                  <p className="text-xs text-muted-foreground mb-0.5">課程改進建議</p>
+                                  <p className="text-sm bg-muted p-2 rounded">{s.improvementNote}</p>
+                                </div>
+                              )}
                               <Button variant="ghost" size="sm" onClick={() => openReportDialog(s)}>
                                 編輯回報
                               </Button>
@@ -215,12 +254,33 @@ export function MySchedulePage() {
               {reportingSchedule && format(reportingSchedule.startTime, "yyyy/MM/dd HH:mm")}
             </DialogDescription>
           </DialogHeader>
-          <Textarea
-            value={reportText}
-            onChange={(e) => setReportText(e.target.value)}
-            placeholder="請簡述本次上課內容、學員參與狀況,或任何需要記錄的事項"
-            rows={5}
-          />
+
+          {reportingSchedule && enrolledNamesFor(reportingSchedule.id).length > 0 && (
+            <p className="text-xs text-muted-foreground bg-muted rounded-lg p-2">
+              本堂課報名長者:{enrolledNamesFor(reportingSchedule.id).join("、")}
+            </p>
+          )}
+
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium mb-1 block">上課內容與長者狀況</label>
+              <Textarea
+                value={reportText}
+                onChange={(e) => setReportText(e.target.value)}
+                placeholder="請簡述本次上課內容、學員參與狀況;若有長者身體不適、情緒反應,或特別需要留意關懷的學員,也請記錄在這裡,方便據點後續追蹤"
+                rows={4}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">課程改進建議(選填)</label>
+              <Textarea
+                value={improvementText}
+                onChange={(e) => setImprovementText(e.target.value)}
+                placeholder="對課程內容、教材、場地或其他行政流程,若有想提出的改進建議,可以寫在這裡給行政端參考"
+                rows={3}
+              />
+            </div>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReportingSchedule(null)} disabled={submittingReport}>
               取消

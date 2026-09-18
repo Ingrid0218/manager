@@ -4,52 +4,53 @@ import * as React from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { PublicHeader } from "@/components/public-header";
-import { Star } from "lucide-react";
 
-type Evaluation = {
-  id: string;
-  courseTitle: string;
-  instructorName: string;
-  rating: number;
-  comment: string;
-  attendeeName: string;
-};
+type EnrollmentReaction = { courseTitle: string; reaction?: "happy" | "neutral" | "sad" };
+type FamilyShare = { id: string; courseTitle: string; comment: string; attendeeName: string };
 
-function StarRating({ rating }: { rating: number }) {
-  return (
-    <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <Star
-          key={n}
-          className={`w-3.5 h-3.5 ${n <= rating ? "fill-amber-400 text-amber-400" : "text-gray-200"}`}
-        />
-      ))}
-    </div>
-  );
-}
+const REACTIONS: { key: "happy" | "neutral" | "sad"; emoji: string; label: string }[] = [
+  { key: "happy", emoji: "😊", label: "開心" },
+  { key: "neutral", emoji: "😐", label: "普通" },
+  { key: "sad", emoji: "😞", label: "不開心" },
+];
 
 export default function ReviewsPage() {
-  const [evaluations, setEvaluations] = React.useState<Evaluation[]>([]);
+  const [reactions, setReactions] = React.useState<EnrollmentReaction[]>([]);
+  const [shares, setShares] = React.useState<FamilyShare[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "evaluations"), (snapshot) => {
-      const list = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Evaluation));
-      setEvaluations(list);
+    const unsubscribe = onSnapshot(collection(db, "enrollments"), (snapshot) => {
+      const list = snapshot.docs
+        .map((d) => ({ courseTitle: d.data().courseTitle, reaction: d.data().reaction }))
+        .filter((e) => e.courseTitle && e.reaction);
+      setReactions(list);
       setLoading(false);
     });
     return () => unsubscribe();
   }, []);
 
-  const grouped = React.useMemo(() => {
-    const map = new Map<string, Evaluation[]>();
-    evaluations.forEach((e) => {
-      const list = map.get(e.courseTitle) ?? [];
-      list.push(e);
-      map.set(e.courseTitle, list);
+  React.useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "evaluations"), (snapshot) => {
+      const list = snapshot.docs
+        .map((d) => ({
+          id: d.id,
+          courseTitle: d.data().courseTitle,
+          comment: d.data().comment,
+          attendeeName: d.data().attendeeName,
+        }))
+        .filter((e) => e.comment);
+      setShares(list);
     });
-    return Array.from(map.entries());
-  }, [evaluations]);
+    return () => unsubscribe();
+  }, []);
+
+  const courseTitles = React.useMemo(() => {
+    const set = new Set<string>();
+    reactions.forEach((r) => set.add(r.courseTitle));
+    shares.forEach((s) => set.add(s.courseTitle));
+    return Array.from(set);
+  }, [reactions, shares]);
 
   return (
     <div className="min-h-screen bg-[#FAF7F0]">
@@ -57,42 +58,52 @@ export default function ReviewsPage() {
       <main className="max-w-4xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-1">課程評鑑</h1>
         <p className="text-sm text-gray-500 mb-2">
-          長者與家屬對各課程的真實回饋。
+          「當下反應」是據點服務人員在下課時,現場詢問長者感受後記錄的第一手反饋。
         </p>
-        <p className="text-xs text-gray-400 mb-6 bg-white inline-block px-3 py-1.5 rounded-lg border border-gray-100">
-          報名參加課程的學員與家屬,未來將可於登入報名系統後留下回饋,目前頁面內容為已收集的回饋整理。
-        </p>
+        <p className="text-sm text-gray-500 mb-6">「家屬的分享」則是家人自己觀察到的心得,提供另一個角度參考。</p>
 
         {loading ? (
           <p className="text-sm text-gray-400 text-center py-12">載入中...</p>
-        ) : grouped.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-12">目前尚無課程評鑑資料</p>
+        ) : courseTitles.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-12">目前尚無課程回饋資料</p>
         ) : (
           <div className="space-y-8">
-            {grouped.map(([courseTitle, items]) => {
-              const avgRating = items.reduce((sum, e) => sum + e.rating, 0) / items.length;
+            {courseTitles.map((title) => {
+              const courseReactions = reactions.filter((r) => r.courseTitle === title);
+              const courseShares = shares.filter((s) => s.courseTitle === title);
               return (
-                <div key={courseTitle}>
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-lg font-semibold text-gray-800">{courseTitle}</h2>
-                    <div className="flex items-center gap-2">
-                      <StarRating rating={Math.round(avgRating)} />
-                      <span className="text-xs text-gray-400">
-                        平均 {avgRating.toFixed(1)} 分({items.length} 則)
-                      </span>
-                    </div>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {items.map((e) => (
-                      <div key={e.id} className="bg-white rounded-xl border border-gray-100 p-4">
-                        <div className="flex items-center justify-between mb-1">
-                          <StarRating rating={e.rating} />
-                          <span className="text-xs text-gray-400">{e.attendeeName}</span>
-                        </div>
-                        <p className="text-sm text-gray-600">{e.comment}</p>
+                <div key={title}>
+                  <h2 className="text-lg font-semibold text-gray-800 mb-3">{title}</h2>
+
+                  {courseReactions.length > 0 && (
+                    <div className="bg-white rounded-xl border border-gray-100 p-4 mb-3">
+                      <p className="text-xs text-gray-400 mb-2">長者當下反應({courseReactions.length} 次記錄)</p>
+                      <div className="flex gap-6">
+                        {REACTIONS.map((r) => {
+                          const count = courseReactions.filter((cr) => cr.reaction === r.key).length;
+                          return (
+                            <div key={r.key} className="flex items-center gap-2">
+                              <span className="text-2xl">{r.emoji}</span>
+                              <span className="text-sm text-gray-600">
+                                {r.label} × {count}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
+
+                  {courseShares.length > 0 && (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {courseShares.map((s) => (
+                        <div key={s.id} className="bg-white rounded-xl border border-gray-100 p-4">
+                          <p className="text-xs text-gray-400 mb-1">{s.attendeeName} 的家屬分享</p>
+                          <p className="text-sm text-gray-600">{s.comment}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
