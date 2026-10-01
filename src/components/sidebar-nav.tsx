@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   FileText,
   CalendarDays,
-  Star,
   DollarSign,
   HeartPulse,
   ClipboardCheck,
@@ -35,7 +34,6 @@ const navItems: {
   { href: "/resumes", label: "講師履歷", icon: FileText, roles: ["admin"] },
   { href: "/course-catalog", label: "課程管理", icon: BookOpen, roles: ["admin"] },
   { href: "/scheduler", label: "講師排班", icon: CalendarDays, roles: ["admin", "staff"] },
-  { href: "/feedback", label: "課程評鑑", icon: Star, roles: ["admin"] },
   { href: "/billing", label: "費用結算", icon: DollarSign, roles: ["admin"] },
   { href: "/attendance", label: "出席確認", icon: ClipboardCheck, roles: ["admin", "staff"] },
   { href: "/messages", label: "講師對話", icon: MessageCircle, roles: ["admin"] },
