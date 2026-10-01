@@ -83,6 +83,12 @@ export function AttendancePage() {
   const [editingNoteId, setEditingNoteId] = React.useState<string | null>(null);
   const [noteDraft, setNoteDraft] = React.useState("");
   const [savingNote, setSavingNote] = React.useState(false);
+  const [now, setNow] = React.useState<Date>(new Date());
+
+  React.useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60 * 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   React.useEffect(() => {
     if (role !== "admin" && !(role === "staff" && siteId)) return;
@@ -219,11 +225,20 @@ export function AttendancePage() {
     }
   }
 
-  async function handleConfirm(scheduleId: string) {
+  async function handleConfirm(schedule: ScheduleItem) {
+    const scheduleId = schedule.id;
+    // 用按下當下的時間再檢查一次,不依賴畫面上的狀態
+    if (new Date() < schedule.startTime) {
+      alert("課程還沒開始,開始後才能確認出席");
+      return;
+    }
     const countStr = attendeeInputs[scheduleId];
     // 沒有手動輸入人數時,自動帶入點名勾選的人數
     const checkedCount = enrollmentsFor(scheduleId).filter((e) => e.attended).length;
     const count = countStr ? Number(countStr) : checkedCount;
+    if (!confirm(`確認「${schedule.title}」已完成上課?\n到場人數:${count} 人\n\n確認後無法自行修改,並會列入講師當月費用計算。`)) {
+      return;
+    }
     setSavingId(scheduleId);
     try {
       await updateDoc(doc(db, "schedules", scheduleId), {
@@ -240,7 +255,17 @@ export function AttendancePage() {
     }
   }
 
-  async function handleCancel(scheduleId: string, reason: "instructor_absent" | "other") {
+  async function handleCancel(schedule: ScheduleItem, reason: "instructor_absent" | "other") {
+    const scheduleId = schedule.id;
+    if (reason === "instructor_absent" && new Date() < schedule.startTime) {
+      alert("課程還沒開始,開始後才能標記講師未到");
+      return;
+    }
+    const message =
+      reason === "instructor_absent"
+        ? `確認「${schedule.title}」的講師未到場?\n\n確認後無法自行修改,這堂課不會列入講師費用。`
+        : `確認取消「${schedule.title}」?\n\n取消後無法自行恢復,報名的長者與家屬會在課程行事曆看到「已取消」。`;
+    if (!confirm(message)) return;
     setSavingId(scheduleId);
     try {
       await updateDoc(doc(db, "schedules", scheduleId), {
@@ -465,38 +490,54 @@ export function AttendancePage() {
                         </div>
                       )}
 
-                      {canOperate && s.status === "scheduled" && (
-                        <div className="flex items-center gap-2 pt-2 border-t mt-2 flex-wrap">
-                          <Input
-                            type="number"
-                            placeholder={`到場人數(預設 ${scheduleEnrollments.filter((e) => e.attended).length})`}
-                            className="w-44"
-                            value={attendeeInputs[s.id] ?? ""}
-                            onChange={(e) =>
-                              setAttendeeInputs((prev) => ({ ...prev, [s.id]: e.target.value }))
-                            }
-                          />
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={savingId === s.id}
-                            onClick={() => handleCancel(s.id, "instructor_absent")}
-                          >
-                            講師未到
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={savingId === s.id}
-                            onClick={() => handleCancel(s.id, "other")}
-                          >
-                            取消課程
-                          </Button>
-                          <Button size="sm" disabled={savingId === s.id} onClick={() => handleConfirm(s.id)}>
-                            確認出席
-                          </Button>
-                        </div>
-                      )}
+                      {canOperate && s.status === "scheduled" && (() => {
+                        // 課程開始前:不能確認出席、不能標記講師未到(避免誤觸或提早結案);取消課程則隨時可按
+                        const started = now >= s.startTime;
+                        return (
+                          <div className="pt-2 border-t mt-2 space-y-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Input
+                                type="number"
+                                placeholder={`到場人數(預設 ${scheduleEnrollments.filter((e) => e.attended).length})`}
+                                className="w-44"
+                                disabled={!started}
+                                value={attendeeInputs[s.id] ?? ""}
+                                onChange={(e) =>
+                                  setAttendeeInputs((prev) => ({ ...prev, [s.id]: e.target.value }))
+                                }
+                              />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={savingId === s.id || !started}
+                                onClick={() => handleCancel(s, "instructor_absent")}
+                              >
+                                講師未到
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={savingId === s.id}
+                                onClick={() => handleCancel(s, "other")}
+                              >
+                                取消課程
+                              </Button>
+                              <Button
+                                size="sm"
+                                disabled={savingId === s.id || !started}
+                                onClick={() => handleConfirm(s)}
+                              >
+                                確認出席
+                              </Button>
+                            </div>
+                            {!started && (
+                              <p className="text-xs text-muted-foreground">
+                                課程將於 {format(s.startTime, "MM/dd HH:mm")} 開始,開始後才能確認出席或標記講師未到;如需停課可直接按「取消課程」。
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })}
