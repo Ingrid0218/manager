@@ -27,14 +27,17 @@ const paths = [
     title: "長輩與家屬",
     description: "幫家中長輩報名課程，查看上課時間、要帶的東西和上課紀錄。",
     actions: [
-      { href: "/register?type=family", label: "註冊家屬帳號", primary: true },
+      { href: "/register/family", label: "註冊家屬帳號", primary: true },
       { href: "/login", label: "登入", primary: false },
     ],
   },
   {
     title: "講師",
     description: "線上送出履歷，審核通過後填寫空堂時間、查看自己的課表。",
-    actions: [{ href: "/register", label: "應徵講師", primary: true }],
+    actions: [
+      { href: "/register/instructor", label: "應徵講師", primary: true },
+      { href: "/login", label: "登入", primary: false },
+    ],
   },
   {
     title: "據點人員與行政",
