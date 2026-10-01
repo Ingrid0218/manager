@@ -25,7 +25,8 @@ import { getEnrollmentDeadline, isEnrollmentClosed } from "@/lib/enrollment";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, doc, updateDoc, Timestamp } from "firebase/firestore";
+import { collection, onSnapshot, doc, updateDoc, setDoc, query, where, Timestamp } from "firebase/firestore";
+import { Textarea } from "@/components/ui/textarea";
 
 type ScheduleItem = {
   id: string;
@@ -45,6 +46,7 @@ type ScheduleItem = {
 type EnrollmentItem = {
   id: string;
   scheduleId: string;
+  elderId: string;
   elderName: string;
   status: string;
   reaction?: "happy" | "neutral" | "sad";
@@ -74,6 +76,35 @@ export function AttendancePage() {
   const [statusFilter, setStatusFilter] = React.useState<string>("scheduled");
   const [attendeeInputs, setAttendeeInputs] = React.useState<Record<string, string>>({});
   const [savingId, setSavingId] = React.useState<string | null>(null);
+
+  // 據點人員對個別長者的觀察紀錄(健康、情緒等),存在獨立的 elder_observations,
+  // 不跟公開可讀的報名資料放一起;key 用報名紀錄 ID(課程ID_長者ID)
+  const [observations, setObservations] = React.useState<Record<string, { note: string; recordedBy?: string; updatedAt?: Date }>>({});
+  const [editingNoteId, setEditingNoteId] = React.useState<string | null>(null);
+  const [noteDraft, setNoteDraft] = React.useState("");
+  const [savingNote, setSavingNote] = React.useState(false);
+
+  React.useEffect(() => {
+    if (role !== "admin" && !(role === "staff" && siteId)) return;
+    // admin 讀全部;staff 只能查詢自己據點的紀錄(安全規則也是這樣限制)
+    const ref =
+      role === "admin"
+        ? collection(db, "elder_observations")
+        : query(collection(db, "elder_observations"), where("locationId", "==", siteId));
+    const unsubscribe = onSnapshot(ref, (snapshot) => {
+      const map: Record<string, { note: string; recordedBy?: string; updatedAt?: Date }> = {};
+      snapshot.docs.forEach((d) => {
+        const data = d.data();
+        map[d.id] = {
+          note: data.note ?? "",
+          recordedBy: data.recordedBy,
+          updatedAt: data.updatedAt ? (data.updatedAt as Timestamp).toDate() : undefined,
+        };
+      });
+      setObservations(map);
+    });
+    return () => unsubscribe();
+  }, [role, siteId]);
 
   const canOperate = role === "staff";
 
@@ -108,6 +139,7 @@ export function AttendancePage() {
         .map((d) => ({
           id: d.id,
           scheduleId: d.data().scheduleId,
+          elderId: d.data().elderId,
           elderName: d.data().elderName,
           status: d.data().status,
           reaction: d.data().reaction,
@@ -139,6 +171,39 @@ export function AttendancePage() {
     } catch (err) {
       console.error("記錄反應失敗:", err);
       alert("操作失敗,請再試一次");
+    }
+  }
+
+  function startEditNote(enrollmentId: string) {
+    setEditingNoteId(enrollmentId);
+    setNoteDraft(observations[enrollmentId]?.note ?? "");
+  }
+
+  async function handleSaveNote(e: EnrollmentItem, locationId: string) {
+    setSavingNote(true);
+    try {
+      const existing = observations[e.id];
+      await setDoc(
+        doc(db, "elder_observations", e.id),
+        {
+          scheduleId: e.scheduleId,
+          elderId: e.elderId,
+          elderName: e.elderName,
+          locationId,
+          note: noteDraft.trim(),
+          recordedBy: user?.email ?? null,
+          updatedAt: Timestamp.now(),
+          // 第一次建立時才寫入建立時間,之後編輯只更新 updatedAt
+          ...(existing ? {} : { createdAt: Timestamp.now() }),
+        },
+        { merge: true }
+      );
+      setEditingNoteId(null);
+    } catch (err) {
+      console.error("儲存觀察紀錄失敗:", err);
+      alert("儲存失敗,請再試一次");
+    } finally {
+      setSavingNote(false);
     }
   }
 
@@ -216,7 +281,7 @@ export function AttendancePage() {
             <CardDescription>
               {role === "admin"
                 ? "掌握全據點的出席確認狀況與講師課後回報,實際確認由各據點承辦人操作。"
-                : "報名於上課前一天中午 12:00 截止,截止後可列印點名單,並於現場勾選實際到場的長者;下課後可順口問問長者今天上課感覺如何,幫忙點選反應。"}
+                : "報名於上課前一天中午 12:00 截止,截止後可列印點名單,並於現場勾選實際到場的長者;下課後可順口問問長者今天上課感覺如何,幫忙點選反應;若觀察到長者身體或情緒狀況,可以用「新增觀察」記錄下來,供總院後續追蹤。"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -292,33 +357,92 @@ export function AttendancePage() {
                             {scheduleEnrollments.length === 0 ? (
                               <p className="text-xs text-muted-foreground">本堂課無長者報名</p>
                             ) : (
-                              scheduleEnrollments.map((e) => (
-                                <div key={e.id} className="flex items-center justify-between gap-2">
-                                  <label className="flex items-center gap-2">
-                                    <Checkbox
-                                      checked={!!e.attended}
-                                      disabled={!canOperate}
-                                      onCheckedChange={(v) => handleToggleAttended(e.id, v === true)}
-                                    />
-                                    <span>{e.elderName}</span>
-                                  </label>
-                                  <div className="flex gap-1.5">
-                                    {REACTIONS.map((r) => (
-                                      <button
-                                        key={r.key}
-                                        type="button"
-                                        disabled={!canOperate}
-                                        onClick={() => handleSetReaction(e.id, r.key)}
-                                        className={`text-lg transition ${
-                                          e.reaction === r.key ? "opacity-100 scale-125" : "opacity-30"
-                                        } ${canOperate ? "cursor-pointer hover:opacity-70" : "cursor-default"}`}
-                                      >
-                                        {r.emoji}
-                                      </button>
-                                    ))}
+                              scheduleEnrollments.map((e) => {
+                                const obs = observations[e.id];
+                                const hasNote = !!obs?.note;
+                                const isEditing = editingNoteId === e.id;
+                                return (
+                                  <div key={e.id} className="py-1 border-b border-border/50 last:border-0">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <label className="flex items-center gap-2">
+                                        <Checkbox
+                                          checked={!!e.attended}
+                                          disabled={!canOperate}
+                                          onCheckedChange={(v) => handleToggleAttended(e.id, v === true)}
+                                        />
+                                        <span>{e.elderName}</span>
+                                      </label>
+                                      <div className="flex items-center gap-1.5">
+                                        {REACTIONS.map((r) => (
+                                          <button
+                                            key={r.key}
+                                            type="button"
+                                            disabled={!canOperate}
+                                            onClick={() => handleSetReaction(e.id, r.key)}
+                                            className={`text-lg transition ${
+                                              e.reaction === r.key ? "opacity-100 scale-125" : "opacity-30"
+                                            } ${canOperate ? "cursor-pointer hover:opacity-70" : "cursor-default"}`}
+                                          >
+                                            {r.emoji}
+                                          </button>
+                                        ))}
+                                        {canOperate && !isEditing && (
+                                          <button
+                                            type="button"
+                                            onClick={() => startEditNote(e.id)}
+                                            className="ml-1 text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+                                          >
+                                            {hasNote ? "編輯觀察" : "新增觀察"}
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {isEditing ? (
+                                      <div className="mt-1.5 space-y-1.5">
+                                        <Textarea
+                                          value={noteDraft}
+                                          onChange={(ev) => setNoteDraft(ev.target.value)}
+                                          placeholder="例如:今天有咳嗽、精神較差,上課時需要休息兩次"
+                                          rows={2}
+                                          className="text-sm bg-white"
+                                        />
+                                        <div className="flex gap-2 justify-end">
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-7 text-xs"
+                                            disabled={savingNote}
+                                            onClick={() => setEditingNoteId(null)}
+                                          >
+                                            取消
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            className="h-7 text-xs"
+                                            disabled={savingNote}
+                                            onClick={() => handleSaveNote(e, s.locationId)}
+                                          >
+                                            {savingNote ? "儲存中..." : "儲存"}
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      hasNote && (
+                                        <p className="mt-1 ml-6 text-xs text-gray-700 bg-white border rounded-md px-2 py-1">
+                                          觀察紀錄:{obs!.note}
+                                          {obs!.updatedAt && (
+                                            <span className="text-muted-foreground">
+                                              {" "}
+                                              ({format(obs!.updatedAt, "MM/dd HH:mm")})
+                                            </span>
+                                          )}
+                                        </p>
+                                      )
+                                    )}
                                   </div>
-                                </div>
-                              ))
+                                );
+                              })
                             )}
                           </div>
                         );
