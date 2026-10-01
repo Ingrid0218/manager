@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROLE_HOME } from "@/lib/role-home";
 
@@ -13,12 +13,11 @@ const publicNavItems = [
 
 export function PublicHeader() {
   const pathname = usePathname();
-  const router = useRouter();
   const { user, role, name, logout } = useAuth();
 
   async function handleLogout() {
     await logout();
-    router.push("/");
+    window.location.assign("/");
   }
 
   return (

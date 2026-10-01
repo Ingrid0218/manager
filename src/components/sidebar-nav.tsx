@@ -12,6 +12,7 @@ import {
   Clock,
   BookOpen,
   MessageCircle,
+  LogOut,
 } from "lucide-react";
 import {
   Sidebar,
@@ -46,7 +47,15 @@ const navItems: {
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const { role, name, user } = useAuth();
+  const { role, name, user, logout } = useAuth();
+
+  // 登出後用整頁重新載入回首頁:
+  // 1. 避免停在受保護頁面時,權限元件搶先把人導去登入頁
+  // 2. 順便清掉上一個身份留在頁面裡的資料狀態,共用電腦切換身份比較乾淨
+  async function handleLogout() {
+    await logout();
+    window.location.assign("/");
+  }
 
   const visibleItems = navItems.filter((item) => role && item.roles.includes(role));
 
@@ -91,6 +100,14 @@ export function SidebarNav() {
             </p>
           </div>
         </div>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          登出
+        </button>
       </SidebarFooter>
     </Sidebar>
   );
