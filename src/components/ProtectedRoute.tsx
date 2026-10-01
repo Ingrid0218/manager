@@ -3,18 +3,12 @@
 import { useEffect, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, type Role } from "@/contexts/AuthContext";
+import { ROLE_HOME } from "@/lib/role-home";
 
 interface ProtectedRouteProps {
   children: ReactNode;
   allowedRoles?: Role[];
 }
-
-const roleHomePage: Record<Role, string> = {
-  admin: "/",
-  staff: "/attendance",
-  instructor: "/my-application",
-  family: "/my-elders",
-};
 
 export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, role, loading } = useAuth();
@@ -27,7 +21,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
       return;
     }
     if (allowedRoles && (!role || !allowedRoles.includes(role))) {
-      router.push(role ? roleHomePage[role] : "/login");
+      router.push(role ? ROLE_HOME[role] : "/login");
     }
   }, [user, role, loading, allowedRoles, router]);
 

@@ -19,6 +19,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
+import Link from "next/link";
+import { Checkbox } from "@/components/ui/checkbox";
+import { getEnrollmentDeadline, isEnrollmentClosed } from "@/lib/enrollment";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
@@ -45,6 +48,7 @@ type EnrollmentItem = {
   elderName: string;
   status: string;
   reaction?: "happy" | "neutral" | "sad";
+  attended?: boolean;
 };
 
 const REACTIONS: { key: "happy" | "neutral" | "sad"; emoji: string }[] = [
@@ -107,6 +111,7 @@ export function AttendancePage() {
           elderName: d.data().elderName,
           status: d.data().status,
           reaction: d.data().reaction,
+          attended: d.data().attended,
         }))
         .filter((e) => e.status === "enrolled");
       setEnrollments(list);
@@ -137,9 +142,23 @@ export function AttendancePage() {
     }
   }
 
+  async function handleToggleAttended(enrollmentId: string, attended: boolean) {
+    try {
+      await updateDoc(doc(db, "enrollments", enrollmentId), {
+        attended,
+        attendanceMarkedAt: Timestamp.now(),
+      });
+    } catch (err) {
+      console.error("點名失敗:", err);
+      alert("操作失敗,請再試一次");
+    }
+  }
+
   async function handleConfirm(scheduleId: string) {
     const countStr = attendeeInputs[scheduleId];
-    const count = countStr ? Number(countStr) : 0;
+    // 沒有手動輸入人數時,自動帶入點名勾選的人數
+    const checkedCount = enrollmentsFor(scheduleId).filter((e) => e.attended).length;
+    const count = countStr ? Number(countStr) : checkedCount;
     setSavingId(scheduleId);
     try {
       await updateDoc(doc(db, "schedules", scheduleId), {
@@ -197,7 +216,7 @@ export function AttendancePage() {
             <CardDescription>
               {role === "admin"
                 ? "掌握全據點的出席確認狀況與講師課後回報,實際確認由各據點承辦人操作。"
-                : "確認講師是否實際到場授課,並記錄本次到場學員人數。下課後可以順口問問長者今天上課感覺如何,幫忙點選反應。"}
+                : "報名於上課前一天中午 12:00 截止,截止後可列印點名單,並於現場勾選實際到場的長者;下課後可順口問問長者今天上課感覺如何,幫忙點選反應。"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -238,34 +257,72 @@ export function AttendancePage() {
                         )}
                       </div>
 
-                      {scheduleEnrollments.length > 0 && (
-                        <div className="text-sm bg-muted/50 rounded-lg p-2 space-y-1.5">
-                          <p className="text-muted-foreground text-xs">
-                            報名 {scheduleEnrollments.length} 位
-                            {canOperate && "(可幫忙記錄長者當下的反應)"}
-                          </p>
-                          {scheduleEnrollments.map((e) => (
-                            <div key={e.id} className="flex items-center justify-between">
-                              <span>{e.elderName}</span>
-                              <div className="flex gap-1.5">
-                                {REACTIONS.map((r) => (
-                                  <button
-                                    key={r.key}
-                                    type="button"
-                                    disabled={!canOperate}
-                                    onClick={() => handleSetReaction(e.id, r.key)}
-                                    className={`text-lg transition ${
-                                      e.reaction === r.key ? "opacity-100 scale-125" : "opacity-30"
-                                    } ${canOperate ? "cursor-pointer hover:opacity-70" : "cursor-default"}`}
-                                  >
-                                    {r.emoji}
-                                  </button>
-                                ))}
-                              </div>
+                      {(() => {
+                        const closed = isEnrollmentClosed(s.startTime);
+                        const attendedCount = scheduleEnrollments.filter((e) => e.attended).length;
+
+                        // 尚未截止:名單還會變動,只顯示目前人數,不開放點名
+                        if (!closed) {
+                          return (
+                            <div className="text-sm bg-muted/50 rounded-lg p-2 flex items-center justify-between flex-wrap gap-2">
+                              <span className="text-muted-foreground text-xs">
+                                報名中 · 目前 {scheduleEnrollments.length} 位 · 截止於{" "}
+                                {format(getEnrollmentDeadline(s.startTime), "MM/dd HH:mm")}
+                              </span>
                             </div>
-                          ))}
-                        </div>
-                      )}
+                          );
+                        }
+
+                        // 已截止:名單確定,可列印點名單、勾選點名、記錄反應
+                        return (
+                          <div className="text-sm bg-muted/50 rounded-lg p-2 space-y-1.5">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <p className="text-muted-foreground text-xs">
+                                報名已截止 · 確定名單 {scheduleEnrollments.length} 位
+                                {scheduleEnrollments.length > 0 && ` · 已點名 ${attendedCount} 位`}
+                              </p>
+                              {scheduleEnrollments.length > 0 && (
+                                <Button asChild size="sm" variant="outline" className="h-7 text-xs">
+                                  <Link href={`/roster/${s.id}`} target="_blank">
+                                    列印點名單
+                                  </Link>
+                                </Button>
+                              )}
+                            </div>
+                            {scheduleEnrollments.length === 0 ? (
+                              <p className="text-xs text-muted-foreground">本堂課無長者報名</p>
+                            ) : (
+                              scheduleEnrollments.map((e) => (
+                                <div key={e.id} className="flex items-center justify-between gap-2">
+                                  <label className="flex items-center gap-2">
+                                    <Checkbox
+                                      checked={!!e.attended}
+                                      disabled={!canOperate}
+                                      onCheckedChange={(v) => handleToggleAttended(e.id, v === true)}
+                                    />
+                                    <span>{e.elderName}</span>
+                                  </label>
+                                  <div className="flex gap-1.5">
+                                    {REACTIONS.map((r) => (
+                                      <button
+                                        key={r.key}
+                                        type="button"
+                                        disabled={!canOperate}
+                                        onClick={() => handleSetReaction(e.id, r.key)}
+                                        className={`text-lg transition ${
+                                          e.reaction === r.key ? "opacity-100 scale-125" : "opacity-30"
+                                        } ${canOperate ? "cursor-pointer hover:opacity-70" : "cursor-default"}`}
+                                      >
+                                        {r.emoji}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {(s.instructorReport || s.improvementNote) && (
                         <div className="text-sm space-y-1.5 border-t pt-2">
@@ -288,8 +345,8 @@ export function AttendancePage() {
                         <div className="flex items-center gap-2 pt-2 border-t mt-2 flex-wrap">
                           <Input
                             type="number"
-                            placeholder="到場人數"
-                            className="w-28"
+                            placeholder={`到場人數(預設 ${scheduleEnrollments.filter((e) => e.attended).length})`}
+                            className="w-44"
                             value={attendeeInputs[s.id] ?? ""}
                             onChange={(e) =>
                               setAttendeeInputs((prev) => ({ ...prev, [s.id]: e.target.value }))

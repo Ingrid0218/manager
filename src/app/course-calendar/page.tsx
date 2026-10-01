@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { format, isSameDay } from "date-fns";
 import { zhTW } from "date-fns/locale";
+import { getEnrollmentDeadline, isEnrollmentClosed } from "@/lib/enrollment";
 
 type LocationItem = { id: string; name: string };
 type ScheduleItem = {
@@ -48,8 +49,12 @@ type ScheduleItem = {
 type ElderProfile = { id: string; name: string };
 type EnrollmentItem = { id: string; scheduleId: string; elderId: string; status: "enrolled" | "cancelled" };
 
-function getPublicStatusBadge(s: ScheduleItem) {
+function getPublicStatusBadge(s: ScheduleItem, now: Date) {
   if (s.status === "cancelled") return { text: "已取消", variant: "destructive" as const };
+  // 前一天中午 12:00 之後、到上課開始之前,顯示已截止報名
+  if (s.status === "scheduled" && isEnrollmentClosed(s.startTime, now) && now < s.startTime) {
+    return { text: "已截止報名", variant: "secondary" as const };
+  }
   return null;
 }
 
@@ -67,6 +72,12 @@ export default function CourseCalendarPage() {
   const [enrollments, setEnrollments] = React.useState<EnrollmentItem[]>([]);
   const [enrollingSchedule, setEnrollingSchedule] = React.useState<ScheduleItem | null>(null);
   const [togglingKey, setTogglingKey] = React.useState<string | null>(null);
+  const [now, setNow] = React.useState<Date>(new Date());
+
+  React.useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60 * 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   React.useEffect(() => {
     setDate(new Date());
@@ -160,6 +171,11 @@ export default function CourseCalendarPage() {
 
   async function toggleEnroll(schedule: ScheduleItem, elder: ElderProfile, currentlyEnrolled: boolean) {
     if (!user) return;
+    if (isEnrollmentClosed(schedule.startTime)) {
+      alert("這堂課已經截止報名,無法再報名或取消");
+      setEnrollingSchedule(null);
+      return;
+    }
     const key = `${schedule.id}_${elder.id}`;
     setTogglingKey(key);
     try {
@@ -242,7 +258,7 @@ export default function CourseCalendarPage() {
             ) : (
               <div className="space-y-3">
                 {dayList.map((s) => {
-                  const badge = getPublicStatusBadge(s);
+                  const badge = getPublicStatusBadge(s, now);
                   const myEnrolledCount = elders.filter((e) => isElderEnrolled(s.id, e.id)).length;
                   return (
                     <div
@@ -275,7 +291,7 @@ export default function CourseCalendarPage() {
                         <Badge variant="outline" className="text-xs">
                           {s.locationName}
                         </Badge>
-                        {isFamily && s.status === "scheduled" && (
+                        {isFamily && s.status === "scheduled" && !isEnrollmentClosed(s.startTime, now) && (
                           <Button
                             size="sm"
                             variant={myEnrolledCount > 0 ? "outline" : "default"}
@@ -285,7 +301,15 @@ export default function CourseCalendarPage() {
                             {myEnrolledCount > 0 ? `已報名 ${myEnrolledCount} 位,調整` : "報名"}
                           </Button>
                         )}
+                        {isFamily && s.status === "scheduled" && isEnrollmentClosed(s.startTime, now) && myEnrolledCount > 0 && (
+                          <span className="ml-auto text-xs text-gray-500">已報名 {myEnrolledCount} 位</span>
+                        )}
                       </div>
+                      {s.status === "scheduled" && !isEnrollmentClosed(s.startTime, now) && (
+                        <p className="text-xs text-gray-400 mt-1.5">
+                          報名截止:{format(getEnrollmentDeadline(s.startTime), "MM/dd HH:mm")}
+                        </p>
+                      )}
                     </div>
                   );
                 })}
@@ -299,7 +323,11 @@ export default function CourseCalendarPage() {
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>報名課程</DialogTitle>
-            <DialogDescription>{enrollingSchedule?.title}</DialogDescription>
+            <DialogDescription>
+              {enrollingSchedule?.title}
+              {enrollingSchedule &&
+                `(報名與取消皆於 ${format(getEnrollmentDeadline(enrollingSchedule.startTime), "MM/dd HH:mm")} 截止)`}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             {elders.length === 0 ? (
@@ -316,7 +344,7 @@ export default function CourseCalendarPage() {
                     <Button
                       size="sm"
                       variant={enrolled ? "outline" : "default"}
-                      disabled={togglingKey === key}
+                      disabled={togglingKey === key || (!!enrollingSchedule && isEnrollmentClosed(enrollingSchedule.startTime, now))}
                       onClick={() => enrollingSchedule && toggleEnroll(enrollingSchedule, elder, enrolled)}
                     >
                       {enrolled ? "取消報名" : "報名"}

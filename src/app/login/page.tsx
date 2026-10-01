@@ -1,17 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { ROLE_HOME } from "@/lib/role-home";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, user, role, loading } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // 登入成功(或本來就已登入)且角色資料讀到之後,直接導去該角色的頁面
+  useEffect(() => {
+    if (loading || !user) return;
+    if (role) {
+      router.replace(ROLE_HOME[role]);
+    } else {
+      setError("這個帳號尚未設定角色,請聯絡管理者");
+    }
+  }, [user, role, loading, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -19,7 +30,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await login(email, password);
-      router.push("/"); // 登入成功先導回首頁,ProtectedRoute 會依角色再導去正確的地方
+      // 導向交給上面的 useEffect,等角色資料讀到再決定去哪一頁
     } catch (err) {
       setError("帳號或密碼錯誤,請再確認一次");
     } finally {
@@ -36,7 +47,7 @@ export default function LoginPage() {
           </div>
           <div>
             <p className="text-sm font-bold text-gray-900 leading-tight">Puli Christian Hospital</p>
-            <p className="text-xs text-gray-400 leading-tight">樂齡系統管理後台</p>
+            <p className="text-xs text-gray-400 leading-tight">樂齡課程系統登入</p>
           </div>
         </div>
 
@@ -49,7 +60,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-              placeholder="admin@christian.puli.com"
+              placeholder="you@example.com"
             />
           </div>
           <div>
@@ -76,7 +87,9 @@ export default function LoginPage() {
         </form>
 
         <p className="text-xs text-gray-400 text-center mt-4">
-          是講師想應徵課程嗎?{" "}
+          <Link href="/" className="hover:underline">回首頁</Link>
+          {" ｜ "}
+          還沒有帳號?{" "}
           <Link href="/register" className="text-amber-600 hover:underline">
             點此註冊
           </Link>

@@ -26,6 +26,12 @@ export default function RegisterPage() {
 
   const [accountType, setAccountType] = React.useState<"instructor" | "family">("instructor");
 
+  // 從首頁點「註冊家屬帳號」進來時,網址會帶 ?type=family,直接切到家屬表單
+  React.useEffect(() => {
+    const type = new URLSearchParams(window.location.search).get("type");
+    if (type === "family") setAccountType("family");
+  }, []);
+
   const [courseCatalog, setCourseCatalog] = React.useState<CourseCatalogItem[]>([]);
   const [locationsData, setLocationsData] = React.useState<LocationItem[]>([]);
 
